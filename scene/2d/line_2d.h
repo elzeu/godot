@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #ifndef LINE2D_H
 #define LINE2D_H
 
@@ -56,6 +57,9 @@ public:
 	};
 
 	Line2D();
+
+	virtual Rect2 _edit_get_rect() const;
+	virtual bool _edit_is_selected_on_click(const Point2 &p_point, double p_tolerance) const;
 
 	void set_points(const PoolVector<Vector2> &p_points);
 	PoolVector<Vector2> get_points() const;

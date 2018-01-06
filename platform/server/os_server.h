@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #ifndef OS_SERVER_H
 #define OS_SERVER_H
 
@@ -66,7 +67,7 @@ protected:
 	virtual int get_video_driver_count() const;
 	virtual const char *get_video_driver_name(int p_driver) const;
 
-	virtual void initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver);
+	virtual Error initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver);
 	virtual void finalize();
 
 	virtual void set_main_loop(MainLoop *p_main_loop);
@@ -75,6 +76,7 @@ public:
 	virtual String get_name();
 
 	virtual void set_cursor_shape(CursorShape p_shape);
+	virtual void set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape, const Vector2 &p_hotspot);
 
 	virtual void set_mouse_show(bool p_show);
 	virtual void set_mouse_grab(bool p_grab);

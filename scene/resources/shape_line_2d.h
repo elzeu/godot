@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #ifndef SHAPE_LINE_2D_H
 #define SHAPE_LINE_2D_H
 
@@ -44,6 +45,8 @@ protected:
 	static void _bind_methods();
 
 public:
+	virtual bool _edit_is_selected_on_click(const Point2 &p_point, double p_tolerance) const;
+
 	void set_normal(const Vector2 &p_normal);
 	void set_d(real_t p_d);
 

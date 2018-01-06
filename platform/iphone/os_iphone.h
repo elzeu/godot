@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #ifdef IPHONE_ENABLED
 
 #ifndef OS_IPHONE_H
@@ -87,7 +88,7 @@ private:
 	virtual const char *get_video_driver_name(int p_driver) const;
 
 	virtual void initialize_core();
-	virtual void initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver);
+	virtual Error initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver);
 
 	virtual void set_main_loop(MainLoop *p_main_loop);
 	virtual MainLoop *get_main_loop() const;
@@ -173,6 +174,7 @@ public:
 	virtual int get_virtual_keyboard_height() const;
 
 	virtual void set_cursor_shape(CursorShape p_shape);
+	virtual void set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape, const Vector2 &p_hotspot);
 
 	virtual Size2 get_window_size() const;
 

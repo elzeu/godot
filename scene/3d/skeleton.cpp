@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #include "skeleton.h"
 
 #include "message_queue.h"
@@ -160,14 +161,14 @@ void Skeleton::_notification(int p_what) {
 
 			//if moved, just update transforms
 			VisualServer *vs = VisualServer::get_singleton();
-			Bone *bonesptr = &bones[0];
+			const Bone *bonesptr = bones.ptr();
 			int len = bones.size();
 			Transform global_transform = get_global_transform();
 			Transform global_transform_inverse = global_transform.affine_inverse();
 
 			for (int i = 0; i < len; i++) {
 
-				Bone &b = bonesptr[i];
+				const Bone &b = bonesptr[i];
 				vs->skeleton_bone_set_transform(skeleton, i, global_transform * (b.transform_final * global_transform_inverse));
 			}
 		} break;

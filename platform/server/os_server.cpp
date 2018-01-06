@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 //#include "servers/visual/visual_server_raster.h"
 //#include "servers/visual/rasterizer_dummy.h"
 #include "os_server.h"
@@ -47,7 +48,7 @@ const char *OS_Server::get_video_driver_name(int p_driver) const {
 	return "Dummy";
 }
 
-void OS_Server::initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver) {
+Error OS_Server::initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver) {
 
 	args = OS::get_singleton()->get_cmdline_args();
 	current_videomode = p_desired;
@@ -67,14 +68,17 @@ void OS_Server::initialize(const VideoMode &p_desired, int p_video_driver, int p
 	spatial_sound_2d_server = memnew(SpatialSound2DServerSW);
 	spatial_sound_2d_server->init();
 
-	ERR_FAIL_COND(!visual_server);
+	ERR_FAIL_COND_V(!visual_server, ERR_UNAVAILABLE);
 
 	visual_server->init();
 
 	input = memnew(InputDefault);
 
 	_ensure_user_data_dir();
+
+	return OK;
 }
+
 void OS_Server::finalize() {
 
 	if (main_loop)
@@ -177,6 +181,9 @@ void OS_Server::move_window_to_foreground() {
 }
 
 void OS_Server::set_cursor_shape(CursorShape p_shape) {
+}
+
+void OS_Server::set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape, const Vector2 &p_hotspot) {
 }
 
 OS::PowerState OS_Server::get_power_state() {

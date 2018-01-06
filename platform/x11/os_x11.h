@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #ifndef OS_X11_H
 #define OS_X11_H
 
@@ -193,17 +194,20 @@ protected:
 	virtual const char *get_audio_driver_name(int p_driver) const;
 
 	virtual void initialize_core();
-	virtual void initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver);
+	virtual Error initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver);
 	virtual void finalize();
 
 	virtual void set_main_loop(MainLoop *p_main_loop);
 
 	void _window_changed(XEvent *xevent);
 
+	bool is_window_maximize_allowed();
+
 public:
 	virtual String get_name();
 
 	virtual void set_cursor_shape(CursorShape p_shape);
+	virtual void set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape, const Vector2 &p_hotspot);
 
 	void set_mouse_mode(MouseMode p_mode);
 	MouseMode get_mouse_mode() const;

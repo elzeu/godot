@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #include "editor_about.h"
 #include "editor_node.h"
 
@@ -131,7 +132,8 @@ EditorAbout::EditorAbout() {
 
 	Label *about_text = memnew(Label);
 	about_text->set_v_size_flags(Control::SIZE_SHRINK_CENTER);
-	about_text->set_text(VERSION_FULL_NAME + hash + String::utf8("\n\xc2\xa9 2007-2018 Juan Linietsky, Ariel Manzur.\n\xc2\xa9 2014-2017 ") +
+	about_text->set_text(VERSION_FULL_NAME + hash +
+						 String::utf8("\n\xc2\xa9 2007-2018 Juan Linietsky, Ariel Manzur.\n\xc2\xa9 2014-2018 ") +
 						 TTR("Godot Engine contributors") + "\n");
 	hbc->add_child(about_text);
 

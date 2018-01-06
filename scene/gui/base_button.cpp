@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #include "base_button.h"
 
 #include "os/keyboard.h"
@@ -538,13 +539,13 @@ BaseButton::BaseButton() {
 	set_focus_mode(FOCUS_ALL);
 	enabled_focus_mode = FOCUS_ALL;
 	action_mode = ACTION_MODE_BUTTON_RELEASE;
+}
+
+BaseButton::~BaseButton() {
 
 	if (button_group.is_valid()) {
 		button_group->buttons.erase(this);
 	}
-}
-
-BaseButton::~BaseButton() {
 }
 
 void ButtonGroup::get_buttons(List<BaseButton *> *r_buttons) {

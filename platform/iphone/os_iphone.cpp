@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #ifdef IPHONE_ENABLED
 
 #include "os_iphone.h"
@@ -97,7 +98,7 @@ void OSIPhone::initialize_core() {
 	set_data_dir(data_dir);
 };
 
-void OSIPhone::initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver) {
+Error OSIPhone::initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver) {
 
 	supported_orientations = 0;
 	supported_orientations |= ((GLOBAL_DEF("video_mode/allow_horizontal", true) ? 1 : 0) << LandscapeLeft);
@@ -144,6 +145,8 @@ void OSIPhone::initialize(const VideoMode &p_desired, int p_video_driver, int p_
 	//icloud->connect();
 #endif
 	Engine::get_singleton()->add_singleton(Engine::Singleton("iOS", memnew(iOS)));
+
+	return OK;
 };
 
 MainLoop *OSIPhone::get_main_loop() const {
@@ -489,6 +492,8 @@ String OSIPhone::get_user_data_dir() const {
 
 	return data_dir;
 };
+
+void OSIPhone::set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape, const Vector2 &p_hotspot){};
 
 String OSIPhone::get_name() {
 

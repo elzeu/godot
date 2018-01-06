@@ -3,7 +3,7 @@
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
-/*                    http:/www.godotengine.org                          */
+/*                      https://godotengine.org                          */
 /*************************************************************************/
 /* Copyright (c) 2007-2018 Juan Linietsky, Ariel Manzur.                 */
 /* Copyright (c) 2014-2018 Godot Engine contributors (cf. AUTHORS.md)    */
@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #include "editor_settings.h"
 
 #include "core/io/compression.h"
@@ -277,7 +278,7 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 	_initial_set("interface/editor/source_font_size", 14);
 	hints["interface/editor/source_font_size"] = PropertyInfo(Variant::INT, "interface/editor/source_font_size", PROPERTY_HINT_RANGE, "8,96,1", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED);
 	_initial_set("interface/editor/custom_font", "");
-	hints["interface/editor/custom_font"] = PropertyInfo(Variant::STRING, "interface/editor/custom_font", PROPERTY_HINT_GLOBAL_FILE, "*.font,*.tres,*.res", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED);
+	hints["interface/editor/custom_font"] = PropertyInfo(Variant::STRING, "interface/editor/custom_font", PROPERTY_HINT_GLOBAL_FILE, "*.ttf,*.otf", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED);
 	_initial_set("interface/editor/dim_editor_on_dialog_popup", true);
 	_initial_set("interface/editor/dim_amount", 0.6f);
 	hints["interface/editor/dim_amount"] = PropertyInfo(Variant::REAL, "interface/editor/dim_amount", PROPERTY_HINT_RANGE, "0,1,0.01", PROPERTY_USAGE_DEFAULT);
@@ -1329,7 +1330,43 @@ Ref<ShortCut> ED_GET_SHORTCUT(const String &p_path) {
 	return sc;
 }
 
+struct ShortCutMapping {
+	const char *path;
+	uint32_t keycode;
+};
+
 Ref<ShortCut> ED_SHORTCUT(const String &p_path, const String &p_name, uint32_t p_keycode) {
+
+#ifdef OSX_ENABLED
+	static const ShortCutMapping macos_mappings[] = {
+		{ "editor/play", KEY_MASK_CMD | KEY_B },
+		{ "editor/play_scene", KEY_MASK_CMD | KEY_R },
+		{ "editor/pause_scene", KEY_MASK_CMD | KEY_MASK_CTRL | KEY_Y },
+		{ "editor/stop", KEY_MASK_CMD | KEY_PERIOD },
+		{ "editor/play_custom_scene", KEY_MASK_SHIFT | KEY_MASK_CMD | KEY_R },
+		{ "editor/editor_2d", KEY_MASK_ALT | KEY_1 },
+		{ "editor/editor_3d", KEY_MASK_ALT | KEY_2 },
+		{ "editor/editor_script", KEY_MASK_ALT | KEY_3 },
+		{ "editor/editor_help", KEY_MASK_ALT | KEY_SPACE },
+		{ "editor/fullscreen_mode", KEY_MASK_CMD | KEY_MASK_CTRL | KEY_F },
+		{ "editor/distraction_free_mode", KEY_MASK_CMD | KEY_MASK_CTRL | KEY_D },
+		{ "script_text_editor/contextual_help", KEY_MASK_ALT | KEY_MASK_SHIFT | KEY_SPACE },
+		{ "script_text_editor/find_next", KEY_MASK_CMD | KEY_G },
+		{ "script_text_editor/find_previous", KEY_MASK_CMD | KEY_MASK_SHIFT | KEY_G },
+		{ "script_text_editor/toggle_breakpoint", KEY_MASK_CMD | KEY_MASK_SHIFT | KEY_B }
+	};
+
+	if (p_keycode == KEY_DELETE) {
+		p_keycode = KEY_MASK_CMD | KEY_BACKSPACE;
+	} else {
+		for (int i = 0; i < sizeof(macos_mappings) / sizeof(ShortCutMapping); i++) {
+			if (p_path == macos_mappings[i].path) {
+				p_keycode = macos_mappings[i].keycode;
+				break;
+			}
+		}
+	}
+#endif
 
 	Ref<InputEventKey> ie;
 	if (p_keycode) {

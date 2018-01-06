@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #ifndef VISUAL_SERVER_RASTER_H
 #define VISUAL_SERVER_RASTER_H
 
@@ -586,7 +587,7 @@ public:
 	BIND2(canvas_item_add_set_transform, RID, const Transform2D &)
 	BIND2(canvas_item_add_clip_ignore, RID, bool)
 	BIND2(canvas_item_set_sort_children_by_y, RID, bool)
-	BIND2(canvas_item_set_z, RID, int)
+	BIND2(canvas_item_set_z_index, RID, int)
 	BIND2(canvas_item_set_z_as_relative_to_parent, RID, bool)
 	BIND3(canvas_item_set_copy_to_backbuffer, RID, bool, const Rect2 &)
 

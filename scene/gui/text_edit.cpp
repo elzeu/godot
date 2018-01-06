@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #include "text_edit.h"
 
 #include "message_queue.h"
@@ -1498,7 +1499,7 @@ void TextEdit::_notification(int p_what) {
 			if (OS::get_singleton()->has_virtual_keyboard())
 				OS::get_singleton()->show_virtual_keyboard(get_text(), get_global_rect());
 			if (raised_from_completion) {
-				VisualServer::get_singleton()->canvas_item_set_z(get_canvas_item(), 1);
+				VisualServer::get_singleton()->canvas_item_set_z_index(get_canvas_item(), 1);
 			}
 
 		} break;
@@ -1512,7 +1513,7 @@ void TextEdit::_notification(int p_what) {
 			if (OS::get_singleton()->has_virtual_keyboard())
 				OS::get_singleton()->hide_virtual_keyboard();
 			if (raised_from_completion) {
-				VisualServer::get_singleton()->canvas_item_set_z(get_canvas_item(), 0);
+				VisualServer::get_singleton()->canvas_item_set_z_index(get_canvas_item(), 0);
 			}
 		} break;
 	}
@@ -1746,15 +1747,15 @@ void TextEdit::indent_left() {
 void TextEdit::_get_mouse_pos(const Point2i &p_mouse, int &r_row, int &r_col) const {
 
 	float rows = p_mouse.y;
-	rows -= cache.style_normal->get_margin(MARGIN_TOP);
 	rows /= get_row_height();
-	int lsp = get_line_scroll_pos(true);
-	int row = cursor.line_ofs + (rows + (round(v_scroll->get_value()) - lsp));
+	rows += v_scroll->get_value();
+	int row = Math::floor(rows);
 
 	if (is_hiding_enabled()) {
 		// row will be offset by the hidden rows
-		int f_ofs = num_lines_from(CLAMP(cursor.line_ofs, 0, text.size() - 1), MIN(rows + 1, text.size() - cursor.line_ofs)) - 1;
-		row = cursor.line_ofs + (f_ofs + (round(v_scroll->get_value()) - lsp));
+		int lsp = get_line_scroll_pos(true);
+		int f_ofs = num_lines_from(CLAMP(cursor.line_ofs, 0, text.size() - 1), MIN(row + 1 - cursor.line_ofs, text.size() - cursor.line_ofs)) - 1;
+		row = cursor.line_ofs + f_ofs;
 		row = CLAMP(row, 0, text.size() - num_lines_from(text.size() - 1, -1));
 	}
 
@@ -1822,10 +1823,18 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 		if (mb->is_pressed()) {
 
 			if (mb->get_button_index() == BUTTON_WHEEL_UP && !mb->get_command()) {
-				_scroll_up(3 * mb->get_factor());
+				if (mb->get_shift()) {
+					h_scroll->set_value(h_scroll->get_value() - (100 * mb->get_factor()));
+				} else {
+					_scroll_up(3 * mb->get_factor());
+				}
 			}
 			if (mb->get_button_index() == BUTTON_WHEEL_DOWN && !mb->get_command()) {
-				_scroll_down(3 * mb->get_factor());
+				if (mb->get_shift()) {
+					h_scroll->set_value(h_scroll->get_value() + (100 * mb->get_factor()));
+				} else {
+					_scroll_down(3 * mb->get_factor());
+				}
 			}
 			if (mb->get_button_index() == BUTTON_WHEEL_LEFT) {
 				h_scroll->set_value(h_scroll->get_value() - (100 * mb->get_factor()));
@@ -2725,6 +2734,8 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 					_scroll_lines_down();
 					break;
 				}
+
+				{
 #else
 				if (k->get_command() && k->get_alt()) {
 					_scroll_lines_down();
@@ -2733,9 +2744,15 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 
 				if (k->get_command())
 					cursor_set_line(text.size() - 1, true, false);
-				else
+				else {
 #endif
-				cursor_set_line(cursor_get_line() + num_lines_from(CLAMP(cursor.line + 1, 0, text.size() - 1), 1), true, false);
+					if (!is_last_visible_line(cursor.line)) {
+						cursor_set_line(cursor_get_line() + num_lines_from(CLAMP(cursor.line + 1, 0, text.size() - 1), 1), true, false);
+					} else {
+						cursor_set_line(text.size() - 1);
+						cursor_set_column(get_line(cursor.line).length(), true);
+					}
+				}
 
 				if (k->get_shift())
 					_post_shift_selection();
@@ -3131,6 +3148,9 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 
 void TextEdit::_scroll_up(real_t p_delta) {
 
+	if (scrolling && smooth_scroll_enabled && SGN(target_v_scroll - v_scroll->get_value()) != SGN(-p_delta))
+		scrolling = false;
+
 	if (scrolling) {
 		target_v_scroll = (target_v_scroll - p_delta);
 	} else {
@@ -3141,14 +3161,21 @@ void TextEdit::_scroll_up(real_t p_delta) {
 		if (target_v_scroll <= 0) {
 			target_v_scroll = 0;
 		}
-		scrolling = true;
-		set_physics_process(true);
+		if (Math::abs(target_v_scroll - v_scroll->get_value()) < 1.0) {
+			v_scroll->set_value(target_v_scroll);
+		} else {
+			scrolling = true;
+			set_physics_process(true);
+		}
 	} else {
 		v_scroll->set_value(target_v_scroll);
 	}
 }
 
 void TextEdit::_scroll_down(real_t p_delta) {
+
+	if (scrolling && smooth_scroll_enabled && SGN(target_v_scroll - v_scroll->get_value()) != SGN(p_delta))
+		scrolling = false;
 
 	if (scrolling) {
 		target_v_scroll = (target_v_scroll + p_delta);
@@ -3166,8 +3193,13 @@ void TextEdit::_scroll_down(real_t p_delta) {
 		if (target_v_scroll > max_v_scroll) {
 			target_v_scroll = max_v_scroll;
 		}
-		scrolling = true;
-		set_physics_process(true);
+
+		if (Math::abs(target_v_scroll - v_scroll->get_value()) < 1.0) {
+			v_scroll->set_value(target_v_scroll);
+		} else {
+			scrolling = true;
+			set_physics_process(true);
+		}
 	} else {
 		v_scroll->set_value(target_v_scroll);
 	}
@@ -4584,6 +4616,24 @@ int TextEdit::num_lines_from(int p_line_from, int unhidden_amount) const {
 	return num_total;
 }
 
+bool TextEdit::is_last_visible_line(int p_line) const {
+
+	ERR_FAIL_INDEX_V(p_line, text.size(), false);
+
+	if (p_line == text.size() - 1)
+		return true;
+
+	if (!is_hiding_enabled())
+		return false;
+
+	for (int i = p_line + 1; i < text.size(); i++) {
+		if (!is_line_hidden(i))
+			return false;
+	}
+
+	return true;
+}
+
 int TextEdit::get_indent_level(int p_line) const {
 
 	ERR_FAIL_INDEX_V(p_line, text.size(), 0);
@@ -5013,7 +5063,7 @@ void TextEdit::_confirm_completion() {
 
 void TextEdit::_cancel_code_hint() {
 
-	VisualServer::get_singleton()->canvas_item_set_z(get_canvas_item(), 0);
+	VisualServer::get_singleton()->canvas_item_set_z_index(get_canvas_item(), 0);
 	raised_from_completion = false;
 	completion_hint = "";
 	update();
@@ -5021,7 +5071,7 @@ void TextEdit::_cancel_code_hint() {
 
 void TextEdit::_cancel_completion() {
 
-	VisualServer::get_singleton()->canvas_item_set_z(get_canvas_item(), 0);
+	VisualServer::get_singleton()->canvas_item_set_z_index(get_canvas_item(), 0);
 	raised_from_completion = false;
 	if (!completion_active)
 		return;
@@ -5196,7 +5246,7 @@ void TextEdit::query_code_comple() {
 
 void TextEdit::set_code_hint(const String &p_hint) {
 
-	VisualServer::get_singleton()->canvas_item_set_z(get_canvas_item(), 1);
+	VisualServer::get_singleton()->canvas_item_set_z_index(get_canvas_item(), 1);
 	raised_from_completion = true;
 	completion_hint = p_hint;
 	completion_hint_offset = -0xFFFF;
@@ -5205,7 +5255,7 @@ void TextEdit::set_code_hint(const String &p_hint) {
 
 void TextEdit::code_complete(const Vector<String> &p_strings, bool p_forced) {
 
-	VisualServer::get_singleton()->canvas_item_set_z(get_canvas_item(), 1);
+	VisualServer::get_singleton()->canvas_item_set_z_index(get_canvas_item(), 1);
 	raised_from_completion = true;
 	completion_strings = p_strings;
 	completion_active = true;

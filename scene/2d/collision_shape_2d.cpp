@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #include "collision_shape_2d.h"
 
 #include "collision_object_2d.h"
@@ -64,7 +65,7 @@ void CollisionShape2D::_notification(int p_what) {
 			/*if (Engine::get_singleton()->is_editor_hint()) {
 				//display above all else
 				set_z_as_relative(false);
-				set_z(VS::CANVAS_ITEM_Z_MAX - 1);
+				set_z_index(VS::CANVAS_ITEM_Z_MAX - 1);
 			}*/
 
 		} break;
@@ -161,6 +162,14 @@ Ref<Shape2D> CollisionShape2D::get_shape() const {
 Rect2 CollisionShape2D::_edit_get_rect() const {
 
 	return rect;
+}
+
+bool CollisionShape2D::_edit_is_selected_on_click(const Point2 &p_point, double p_tolerance) const {
+
+	if (!shape.is_valid())
+		return false;
+
+	return shape->_edit_is_selected_on_click(p_point, p_tolerance);
 }
 
 String CollisionShape2D::get_configuration_warning() const {

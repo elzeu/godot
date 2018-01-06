@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #ifdef WINDOWS_ENABLED
 
 #include "file_access_windows.h"
@@ -189,6 +190,7 @@ uint8_t FileAccessWindows::get_8() const {
 	uint8_t b;
 	if (fread(&b, 1, 1, f) == 0) {
 		check_errors();
+		b = '\0';
 	};
 
 	return b;

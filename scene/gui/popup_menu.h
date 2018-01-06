@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #ifndef POPUP_MENU_H
 #define POPUP_MENU_H
 
@@ -83,6 +84,7 @@ class PopupMenu : public Popup {
 	String _get_accel_text(int p_item) const;
 	int _get_mouse_over(const Point2 &p_over) const;
 	virtual Size2 get_minimum_size() const;
+	void _scroll(float p_factor, const Point2 &p_over);
 	void _gui_input(const Ref<InputEvent> &p_event);
 	void _activate_submenu(int over);
 	void _submenu_timeout();

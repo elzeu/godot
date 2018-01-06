@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #ifndef NATIVE_SCRIPT_H
 #define NATIVE_SCRIPT_H
 
@@ -204,7 +205,7 @@ class NativeScriptLanguage : public ScriptLanguage {
 private:
 	static NativeScriptLanguage *singleton;
 
-	void _unload_stuff();
+	void _unload_stuff(bool p_reload = false);
 
 #ifndef NO_THREADS
 	Mutex *mutex;

@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #ifndef RASTERIZERSTORAGEGLES3_H
 #define RASTERIZERSTORAGEGLES3_H
 
@@ -472,6 +473,7 @@ public:
 			bool uses_discard;
 			bool uses_sss;
 			bool uses_screen_texture;
+			bool uses_depth_texture;
 			bool uses_time;
 			bool writes_modelview_or_projection;
 			bool uses_vertex_lighting;
@@ -1180,7 +1182,7 @@ public:
 
 			clear = true;
 			inactive = true;
-			inactive_time = false;
+			inactive_time = 0.0;
 
 			glGenBuffers(2, particle_buffers);
 			glGenVertexArrays(2, particle_vaos);

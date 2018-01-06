@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #include "os_javascript.h"
 
 #include "core/engine.h"
@@ -419,7 +420,7 @@ void send_notification(int notif) {
 }
 }
 
-void OS_JavaScript::initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver) {
+Error OS_JavaScript::initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver) {
 
 	print_line("Init OS");
 
@@ -429,7 +430,7 @@ void OS_JavaScript::initialize(const VideoMode &p_desired, int p_video_driver, i
 	attributes.antialias = false;
 	attributes.majorVersion = 2;
 	EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context(NULL, &attributes);
-	ERR_FAIL_COND(emscripten_webgl_make_context_current(ctx) != EMSCRIPTEN_RESULT_SUCCESS);
+	ERR_FAIL_COND_V(emscripten_webgl_make_context_current(ctx) != EMSCRIPTEN_RESULT_SUCCESS, ERR_UNAVAILABLE);
 
 	video_mode = p_desired;
 	// can't fulfil fullscreen request due to browser security
@@ -507,6 +508,8 @@ void OS_JavaScript::initialize(const VideoMode &p_desired, int p_video_driver, i
 #undef EM_CHECK
 
 	visual_server->init();
+
+	return OK;
 }
 
 void OS_JavaScript::set_main_loop(MainLoop *p_main_loop) {
@@ -777,6 +780,9 @@ void OS_JavaScript::set_cursor_shape(CursorShape p_shape) {
 	cursor_shape = p_shape;
 	if (get_mouse_mode() != MOUSE_MODE_HIDDEN)
 		set_css_cursor(godot2dom_cursor(cursor_shape));
+}
+
+void OS_JavaScript::set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape, const Vector2 &p_hotspot) {
 }
 
 void OS_JavaScript::main_loop_begin() {

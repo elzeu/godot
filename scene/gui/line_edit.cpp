@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #include "line_edit.h"
 #include "label.h"
 #include "os/keyboard.h"
@@ -367,6 +368,18 @@ void LineEdit::_gui_input(Ref<InputEvent> p_event) {
 
 					shift_selection_check_post(k->get_shift());
 
+				} break;
+				case KEY_UP: {
+
+					shift_selection_check_pre(k->get_shift());
+					set_cursor_position(0);
+					shift_selection_check_post(k->get_shift());
+				} break;
+				case KEY_DOWN: {
+
+					shift_selection_check_pre(k->get_shift());
+					set_cursor_position(text.length());
+					shift_selection_check_post(k->get_shift());
 				} break;
 				case KEY_DELETE: {
 

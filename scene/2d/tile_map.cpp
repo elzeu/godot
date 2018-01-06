@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #include "tile_map.h"
 
 #include "io/marshalls.h"
@@ -336,7 +337,7 @@ void TileMap::_update_dirty_quadrants() {
 					debug_canvas_item = vs->canvas_item_create();
 					vs->canvas_item_set_parent(debug_canvas_item, canvas_item);
 					vs->canvas_item_set_z_as_relative_to_parent(debug_canvas_item, false);
-					vs->canvas_item_set_z(debug_canvas_item, VS::CANVAS_ITEM_Z_MAX - 1);
+					vs->canvas_item_set_z_index(debug_canvas_item, VS::CANVAS_ITEM_Z_MAX - 1);
 					q.canvas_items.push_back(debug_canvas_item);
 					prev_debug_canvas_item = debug_canvas_item;
 				}

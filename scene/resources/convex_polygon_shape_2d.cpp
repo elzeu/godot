@@ -27,11 +27,17 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #include "convex_polygon_shape_2d.h"
 
 #include "geometry.h"
 #include "servers/physics_2d_server.h"
 #include "servers/visual_server.h"
+
+bool ConvexPolygonShape2D::_edit_is_selected_on_click(const Point2 &p_point, double p_tolerance) const {
+
+	return Geometry::is_point_in_polygon(p_point, points);
+}
 
 void ConvexPolygonShape2D::_update_shape() {
 

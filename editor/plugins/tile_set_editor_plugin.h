@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #ifndef TILE_SET_EDITOR_PLUGIN_H
 #define TILE_SET_EDITOR_PLUGIN_H
 
@@ -86,6 +87,7 @@ class AutotileEditor : public Control {
 
 	int current_item_index;
 	Sprite *preview;
+	ScrollContainer *scroll;
 	Control *workspace_container;
 	Control *workspace;
 	Button *tool_editmode[EDITMODE_MAX];

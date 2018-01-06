@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #include "shader_language.h"
 #include "os/os.h"
 #include "print_string.h"
@@ -3209,8 +3210,6 @@ Error ShaderLanguage::_parse_block(BlockNode *p_block, const Map<StringName, Bui
 				var.precision = precision;
 				var.line = tk_line;
 
-				p_block->variables[name] = var;
-
 				VariableDeclarationNode::Declaration decl;
 
 				decl.name = name;
@@ -3219,7 +3218,7 @@ Error ShaderLanguage::_parse_block(BlockNode *p_block, const Map<StringName, Bui
 				tk = _get_token();
 
 				if (tk.type == TK_OP_ASSIGN) {
-					//variable creted with assignment! must parse an expression
+					//variable created with assignment! must parse an expression
 					Node *n = _parse_and_reduce_expression(p_block, p_builtin_types);
 					if (!n)
 						return ERR_PARSE_ERROR;
@@ -3232,6 +3231,8 @@ Error ShaderLanguage::_parse_block(BlockNode *p_block, const Map<StringName, Bui
 					}
 					tk = _get_token();
 				}
+
+				p_block->variables[name] = var;
 
 				vardecl->declarations.push_back(decl);
 

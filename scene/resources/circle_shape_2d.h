@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #ifndef CIRCLE_SHAPE_2D_H
 #define CIRCLE_SHAPE_2D_H
 
@@ -42,6 +43,8 @@ protected:
 	static void _bind_methods();
 
 public:
+	virtual bool _edit_is_selected_on_click(const Point2 &p_point, double p_tolerance) const;
+
 	void set_radius(real_t p_radius);
 	real_t get_radius() const;
 

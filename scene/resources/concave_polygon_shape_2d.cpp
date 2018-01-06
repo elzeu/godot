@@ -27,10 +27,28 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #include "concave_polygon_shape_2d.h"
 
 #include "servers/physics_2d_server.h"
 #include "servers/visual_server.h"
+
+bool ConcavePolygonShape2D::_edit_is_selected_on_click(const Point2 &p_point, double p_tolerance) const {
+
+	PoolVector<Vector2> s = get_segments();
+	int len = s.size();
+	if (len == 0 || (len % 2) == 1)
+		return false;
+
+	PoolVector<Vector2>::Read r = s.read();
+	for (int i = 0; i < len; i += 2) {
+		Vector2 closest = Geometry::get_closest_point_to_segment_2d(p_point, &r[i]);
+		if (p_point.distance_to(closest) < p_tolerance)
+			return true;
+	}
+
+	return false;
+}
 
 void ConcavePolygonShape2D::set_segments(const PoolVector<Vector2> &p_segments) {
 

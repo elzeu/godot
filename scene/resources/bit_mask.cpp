@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #include "bit_mask.h"
 #include "io/image_loader.h"
 
@@ -111,8 +112,8 @@ int BitMap::get_true_bit_count() const {
 
 void BitMap::set_bit(const Point2 &p_pos, bool p_value) {
 
-	int x = Math::fast_ftoi(p_pos.x);
-	int y = Math::fast_ftoi(p_pos.y);
+	int x = p_pos.x;
+	int y = p_pos.y;
 
 	ERR_FAIL_INDEX(x, width);
 	ERR_FAIL_INDEX(y, height);

@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #ifndef SHAPE_2D_H
 #define SHAPE_2D_H
 
@@ -44,6 +45,8 @@ protected:
 	Shape2D(const RID &p_rid);
 
 public:
+	virtual bool _edit_is_selected_on_click(const Point2 &p_point, double p_tolerance) const { return true; }
+
 	void set_custom_solver_bias(real_t p_bias);
 	real_t get_custom_solver_bias() const;
 

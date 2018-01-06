@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #ifndef ANIMATION_PLAYER_H
 #define ANIMATION_PLAYER_H
 
@@ -205,6 +206,7 @@ private:
 
 	List<StringName> queued;
 
+	bool end_reached;
 	bool end_notify;
 
 	String autoplay;

@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #ifndef SCRIPT_EDITOR_PLUGIN_H
 #define SCRIPT_EDITOR_PLUGIN_H
 
@@ -137,6 +138,7 @@ class ScriptEditor : public PanelContainer {
 		CLOSE_ALL,
 		CLOSE_OTHER_TABS,
 		TOGGLE_SCRIPTS_PANEL,
+		SHOW_IN_FILE_SYSTEM,
 		FILE_COPY_PATH,
 		FILE_TOOL_RELOAD,
 		FILE_TOOL_RELOAD_SOFT,

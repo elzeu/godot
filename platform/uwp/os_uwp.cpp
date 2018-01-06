@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #include "os_uwp.h"
 
 #include "drivers/gles3/rasterizer_gles3.h"
@@ -194,7 +195,7 @@ void OSUWP::screen_size_changed() {
 	gl_context->reset();
 };
 
-void OSUWP::initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver) {
+Error OSUWP::initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver) {
 
 	main_loop = NULL;
 	outside = true;
@@ -297,6 +298,8 @@ void OSUWP::initialize(const VideoMode &p_desired, int p_video_driver, int p_aud
 		display_request->RequestActive();
 
 	set_keep_screen_on(GLOBAL_DEF("display/window/keep_screen_on", true));
+
+	return OK;
 }
 
 void OSUWP::set_clipboard(const String &p_text) {
@@ -649,6 +652,10 @@ void OSUWP::set_cursor_shape(CursorShape p_shape) {
 	CoreWindow::GetForCurrentThread()->PointerCursor = ref new CoreCursor(uwp_cursors[p_shape], 0);
 
 	cursor_shape = p_shape;
+}
+
+void OSUWP::set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape, const Vector2 &p_hotspot) {
+	// TODO
 }
 
 Error OSUWP::execute(const String &p_path, const List<String> &p_arguments, bool p_blocking, ProcessID *r_child_id, String *r_pipe, int *r_exitcode, bool read_stderr) {

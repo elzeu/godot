@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #include "color_picker.h"
 
 #include "os/input.h"
@@ -209,6 +210,7 @@ Color ColorPicker::get_pick_color() const {
 }
 
 void ColorPicker::add_preset(const Color &p_color) {
+
 	if (presets.find(p_color)) {
 		presets.move_to_back(presets.find(p_color));
 	} else {

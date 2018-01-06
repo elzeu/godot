@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #include "editor_node.h"
 
 #include "core/bind/core_bind.h"
@@ -59,6 +60,7 @@
 #include "editor/editor_themes.h"
 #include "editor/import/editor_import_collada.h"
 #include "editor/import/editor_scene_importer_gltf.h"
+#include "editor/import/resource_importer_bitmask.h"
 #include "editor/import/resource_importer_csv_translation.h"
 #include "editor/import/resource_importer_obj.h"
 #include "editor/import/resource_importer_scene.h"
@@ -1020,7 +1022,7 @@ void EditorNode::_save_scene(String p_file, int idx) {
 
 		current_option = -1;
 		accept->get_ok()->set_text(TTR("I see.."));
-		accept->set_text(TTR("Couldn't save scene. Likely dependencies (instances) couldn't be satisfied."));
+		accept->set_text(TTR("Couldn't save scene. Likely dependencies (instances or inheritance) couldn't be satisfied."));
 		accept->popup_centered_minsize();
 		return;
 	}
@@ -1028,6 +1030,13 @@ void EditorNode::_save_scene(String p_file, int idx) {
 	// force creation of node path cache
 	// (hacky but needed for the tree to update properly)
 	Node *dummy_scene = sdata->instance(PackedScene::GEN_EDIT_STATE_INSTANCE);
+	if (!dummy_scene) {
+		current_option = -1;
+		accept->get_ok()->set_text(TTR("I see.."));
+		accept->set_text(TTR("Couldn't save scene. Likely dependencies (instances or inheritance) couldn't be satisfied."));
+		accept->popup_centered_minsize();
+		return;
+	}
 	memdelete(dummy_scene);
 
 	int flg = 0;
@@ -4419,10 +4428,11 @@ void EditorNode::_dropped_files(const Vector<String> &p_files, int p_screen) {
 	String to_path = ProjectSettings::get_singleton()->globalize_path(get_filesystem_dock()->get_current_path());
 	DirAccessRef dir = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
 
+	Vector<String> just_copy = String("ttf,otf").split(",");
 	for (int i = 0; i < p_files.size(); i++) {
 
 		String from = p_files[i];
-		if (!ResourceFormatImporter::get_singleton()->can_be_imported(from)) {
+		if (!ResourceFormatImporter::get_singleton()->can_be_imported(from) && (just_copy.find(from.get_extension().to_lower()) != -1)) {
 			continue;
 		}
 		String to = to_path.plus_file(from.get_file());
@@ -4806,6 +4816,10 @@ EditorNode::EditorNode() {
 			import_gltf.instance();
 			import_scene->add_importer(import_gltf);
 		}
+
+		Ref<ResourceImporterBitMap> import_bitmap;
+		import_bitmap.instance();
+		ResourceFormatImporter::get_singleton()->add_importer(import_bitmap);
 	}
 
 	_pvrtc_register_compressors();

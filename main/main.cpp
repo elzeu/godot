@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #include "main.h"
 
 #include "app_icon.gen.h"
@@ -983,7 +984,10 @@ Error Main::setup2(Thread::ID p_main_tid_override) {
 		Thread::_main_thread_id = p_main_tid_override;
 	}
 
-	OS::get_singleton()->initialize(video_mode, video_driver_idx, audio_driver_idx);
+	Error err = OS::get_singleton()->initialize(video_mode, video_driver_idx, audio_driver_idx);
+	if (err != OK) {
+		return err;
+	}
 	if (init_use_custom_pos) {
 		OS::get_singleton()->set_window_position(init_custom_pos);
 	}
@@ -1107,7 +1111,7 @@ Error Main::setup2(Thread::ID p_main_tid_override) {
 		if (cursor.is_valid()) {
 			//print_line("loaded ok");
 			Vector2 hotspot = ProjectSettings::get_singleton()->get("display/mouse_cursor/custom_image_hotspot");
-			Input::get_singleton()->set_custom_mouse_cursor(cursor, hotspot);
+			Input::get_singleton()->set_custom_mouse_cursor(cursor, Input::CURSOR_ARROW, hotspot);
 		}
 	}
 #ifdef TOOLS_ENABLED

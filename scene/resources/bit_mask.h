@@ -27,6 +27,7 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+
 #ifndef BIT_MASK_H
 #define BIT_MASK_H
 
@@ -38,7 +39,6 @@ class BitMap : public Resource {
 
 	GDCLASS(BitMap, Resource);
 	OBJ_SAVE_TYPE(BitMap);
-	RES_BASE_EXTENSION("pbm");
 
 	Vector<uint8_t> bitmask;
 	int width;
