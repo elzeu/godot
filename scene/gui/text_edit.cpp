@@ -3641,9 +3641,10 @@ void TextEdit::center_viewport_to_cursor() {
 	int visible_rows = get_visible_rows();
 	if (h_scroll->is_visible_in_tree())
 		visible_rows -= ((h_scroll->get_combined_minimum_size().height - 1) / get_row_height());
-
-	int max_ofs = text.size() - (scroll_past_end_of_file_enabled ? 1 : num_lines_from(text.size() - 1, -visible_rows));
-	cursor.line_ofs = CLAMP(cursor.line - num_lines_from(cursor.line - visible_rows / 2, -visible_rows / 2), 0, max_ofs);
+	if (text.size() >= visible_rows) {
+		int max_ofs = text.size() - (scroll_past_end_of_file_enabled ? 1 : MAX(num_lines_from(text.size() - 1, -visible_rows), 0));
+		cursor.line_ofs = CLAMP(cursor.line - num_lines_from(MAX(cursor.line - visible_rows / 2, 0), -visible_rows / 2), 0, max_ofs);
+	}
 	int cursor_x = get_column_x_offset(cursor.column, text[cursor.line]);
 
 	if (cursor_x > (cursor.x_ofs + visible_width))
@@ -4466,31 +4467,44 @@ bool TextEdit::search(const String &p_key, uint32_t p_search_flags, int p_from_l
 
 		int pos_from = 0;
 		int last_pos = -1;
-		while ((last_pos = (p_search_flags & SEARCH_MATCH_CASE) ? text_line.find(p_key, pos_from) : text_line.findn(p_key, pos_from)) != -1) {
 
-			if (p_search_flags & SEARCH_BACKWARDS) {
+		while (true) {
 
-				if (last_pos > from_column)
-					break;
-				pos = last_pos;
+			while ((last_pos = (p_search_flags & SEARCH_MATCH_CASE) ? text_line.find(p_key, pos_from) : text_line.findn(p_key, pos_from)) != -1) {
 
-			} else {
+				if (p_search_flags & SEARCH_BACKWARDS) {
 
-				if (last_pos >= from_column) {
+					if (last_pos > from_column)
+						break;
 					pos = last_pos;
-					break;
+
+				} else {
+
+					if (last_pos >= from_column) {
+						pos = last_pos;
+						break;
+					}
 				}
+
+				pos_from = last_pos + p_key.length();
 			}
 
-			pos_from = last_pos + p_key.length();
-		}
+			bool is_match = true;
 
-		if (pos != -1 && (p_search_flags & SEARCH_WHOLE_WORDS)) {
-			//validate for whole words
-			if (pos > 0 && _is_text_char(text_line[pos - 1]))
-				pos = -1;
-			else if (_is_text_char(text_line[pos + p_key.length()]))
-				pos = -1;
+			if (pos != -1 && (p_search_flags & SEARCH_WHOLE_WORDS)) {
+				//validate for whole words
+				if (pos > 0 && _is_text_char(text_line[pos - 1]))
+					is_match = false;
+				else if (pos + p_key.length() < text_line.length() && _is_text_char(text_line[pos + p_key.length()]))
+					is_match = false;
+			}
+
+			if (is_match || last_pos == -1 || pos == -1) {
+				break;
+			}
+
+			pos_from = pos + 1;
+			pos = -1;
 		}
 
 		if (pos != -1)
