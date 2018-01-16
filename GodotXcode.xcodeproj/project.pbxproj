@@ -25,6 +25,45 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A10001D720066F0400AA9F72 /* .gitignore */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		A10001D820066F0400AA9F72 /* config.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = config.py; sourceTree = "<group>"; };
+		A10001D920066F0400AA9F72 /* gdnet_address.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = gdnet_address.cpp; sourceTree = "<group>"; };
+		A10001DA20066F0400AA9F72 /* gdnet_address.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gdnet_address.h; sourceTree = "<group>"; };
+		A10001DB20066F0400AA9F72 /* gdnet_event.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = gdnet_event.cpp; sourceTree = "<group>"; };
+		A10001DC20066F0400AA9F72 /* gdnet_event.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gdnet_event.h; sourceTree = "<group>"; };
+		A10001DD20066F0400AA9F72 /* gdnet_host.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = gdnet_host.cpp; sourceTree = "<group>"; };
+		A10001DE20066F0400AA9F72 /* gdnet_host.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gdnet_host.h; sourceTree = "<group>"; };
+		A10001DF20066F0400AA9F72 /* gdnet_message.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = gdnet_message.cpp; sourceTree = "<group>"; };
+		A10001E020066F0400AA9F72 /* gdnet_message.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gdnet_message.h; sourceTree = "<group>"; };
+		A10001E120066F0400AA9F72 /* gdnet_peer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = gdnet_peer.cpp; sourceTree = "<group>"; };
+		A10001E220066F0400AA9F72 /* gdnet_peer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gdnet_peer.h; sourceTree = "<group>"; };
+		A10001E320066F0400AA9F72 /* gdnet_queue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gdnet_queue.h; sourceTree = "<group>"; };
+		A10001E420066F0400AA9F72 /* LICENSE.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = LICENSE.md; sourceTree = "<group>"; };
+		A10001E620066F0400AA9F72 /* callbacks.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = callbacks.cpp; sourceTree = "<group>"; };
+		A10001E720066F0400AA9F72 /* compress.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compress.cpp; sourceTree = "<group>"; };
+		A10001E820066F0400AA9F72 /* host.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = host.cpp; sourceTree = "<group>"; };
+		A10001EB20066F0400AA9F72 /* callbacks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = callbacks.h; sourceTree = "<group>"; };
+		A10001EC20066F0400AA9F72 /* list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = list.h; sourceTree = "<group>"; };
+		A10001ED20066F0400AA9F72 /* penet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = penet.h; sourceTree = "<group>"; };
+		A10001EE20066F0400AA9F72 /* protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = protocol.h; sourceTree = "<group>"; };
+		A10001EF20066F0400AA9F72 /* time.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = time.h; sourceTree = "<group>"; };
+		A10001F020066F0400AA9F72 /* types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = types.h; sourceTree = "<group>"; };
+		A10001F120066F0400AA9F72 /* unix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = unix.h; sourceTree = "<group>"; };
+		A10001F220066F0400AA9F72 /* utility.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utility.h; sourceTree = "<group>"; };
+		A10001F320066F0400AA9F72 /* win32.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = win32.h; sourceTree = "<group>"; };
+		A10001F420066F0400AA9F72 /* LICENSE.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
+		A10001F520066F0400AA9F72 /* list.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = list.cpp; sourceTree = "<group>"; };
+		A10001F620066F0400AA9F72 /* packet.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = packet.cpp; sourceTree = "<group>"; };
+		A10001F720066F0400AA9F72 /* peer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = peer.cpp; sourceTree = "<group>"; };
+		A10001F820066F0400AA9F72 /* protocol.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = protocol.cpp; sourceTree = "<group>"; };
+		A10001F920066F0400AA9F72 /* SCsub */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SCsub; sourceTree = "<group>"; };
+		A10001FA20066F0400AA9F72 /* unix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = unix.cpp; sourceTree = "<group>"; };
+		A10001FB20066F0400AA9F72 /* win32.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = win32.cpp; sourceTree = "<group>"; };
+		A10001FC20066F0400AA9F72 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		A10001FD20066F0400AA9F72 /* register_types.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = register_types.cpp; sourceTree = "<group>"; };
+		A10001FE20066F0400AA9F72 /* register_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = register_types.h; sourceTree = "<group>"; };
+		A10001FF20066F0400AA9F72 /* SCsub */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SCsub; sourceTree = "<group>"; };
+		A100020120066F0400AA9F72 /* test.gd */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = test.gd; sourceTree = "<group>"; };
 		A1B926851FEBCF86004CC10A /* summator.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = summator.cpp; sourceTree = "<group>"; };
 		A1B926861FEBCF86004CC10A /* summator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = summator.h; sourceTree = "<group>"; };
 		A1B926881FEBCFF8004CC10A /* register_types.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = register_types.cpp; sourceTree = "<group>"; };
@@ -8281,6 +8320,84 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A10001D620066F0400AA9F72 /* gdnet3 */ = {
+			isa = PBXGroup;
+			children = (
+				A10001D720066F0400AA9F72 /* .gitignore */,
+				A10001D820066F0400AA9F72 /* config.py */,
+				A10001D920066F0400AA9F72 /* gdnet_address.cpp */,
+				A10001DA20066F0400AA9F72 /* gdnet_address.h */,
+				A10001DB20066F0400AA9F72 /* gdnet_event.cpp */,
+				A10001DC20066F0400AA9F72 /* gdnet_event.h */,
+				A10001DD20066F0400AA9F72 /* gdnet_host.cpp */,
+				A10001DE20066F0400AA9F72 /* gdnet_host.h */,
+				A10001DF20066F0400AA9F72 /* gdnet_message.cpp */,
+				A10001E020066F0400AA9F72 /* gdnet_message.h */,
+				A10001E120066F0400AA9F72 /* gdnet_peer.cpp */,
+				A10001E220066F0400AA9F72 /* gdnet_peer.h */,
+				A10001E320066F0400AA9F72 /* gdnet_queue.h */,
+				A10001E420066F0400AA9F72 /* LICENSE.md */,
+				A10001E520066F0400AA9F72 /* penet */,
+				A10001FC20066F0400AA9F72 /* README.md */,
+				A10001FD20066F0400AA9F72 /* register_types.cpp */,
+				A10001FE20066F0400AA9F72 /* register_types.h */,
+				A10001FF20066F0400AA9F72 /* SCsub */,
+				A100020020066F0400AA9F72 /* test */,
+			);
+			path = gdnet3;
+			sourceTree = "<group>";
+		};
+		A10001E520066F0400AA9F72 /* penet */ = {
+			isa = PBXGroup;
+			children = (
+				A10001E620066F0400AA9F72 /* callbacks.cpp */,
+				A10001E720066F0400AA9F72 /* compress.cpp */,
+				A10001E820066F0400AA9F72 /* host.cpp */,
+				A10001E920066F0400AA9F72 /* include */,
+				A10001F420066F0400AA9F72 /* LICENSE.txt */,
+				A10001F520066F0400AA9F72 /* list.cpp */,
+				A10001F620066F0400AA9F72 /* packet.cpp */,
+				A10001F720066F0400AA9F72 /* peer.cpp */,
+				A10001F820066F0400AA9F72 /* protocol.cpp */,
+				A10001F920066F0400AA9F72 /* SCsub */,
+				A10001FA20066F0400AA9F72 /* unix.cpp */,
+				A10001FB20066F0400AA9F72 /* win32.cpp */,
+			);
+			path = penet;
+			sourceTree = "<group>";
+		};
+		A10001E920066F0400AA9F72 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				A10001EA20066F0400AA9F72 /* penet */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		A10001EA20066F0400AA9F72 /* penet */ = {
+			isa = PBXGroup;
+			children = (
+				A10001EB20066F0400AA9F72 /* callbacks.h */,
+				A10001EC20066F0400AA9F72 /* list.h */,
+				A10001ED20066F0400AA9F72 /* penet.h */,
+				A10001EE20066F0400AA9F72 /* protocol.h */,
+				A10001EF20066F0400AA9F72 /* time.h */,
+				A10001F020066F0400AA9F72 /* types.h */,
+				A10001F120066F0400AA9F72 /* unix.h */,
+				A10001F220066F0400AA9F72 /* utility.h */,
+				A10001F320066F0400AA9F72 /* win32.h */,
+			);
+			path = penet;
+			sourceTree = "<group>";
+		};
+		A100020020066F0400AA9F72 /* test */ = {
+			isa = PBXGroup;
+			children = (
+				A100020120066F0400AA9F72 /* test.gd */,
+			);
+			path = test;
+			sourceTree = "<group>";
+		};
 		A1B926841FEBCF64004CC10A /* gdyojimbo */ = {
 			isa = PBXGroup;
 			children = (
@@ -11432,6 +11549,7 @@
 		A1E8BB091FD478FA00FC9DE6 /* modules */ = {
 			isa = PBXGroup;
 			children = (
+				A10001D620066F0400AA9F72 /* gdnet3 */,
 				A1B926841FEBCF64004CC10A /* gdyojimbo */,
 				A1E8BB0A1FD478FA00FC9DE6 /* bullet */,
 				A1E8BB571FD478FA00FC9DE6 /* dds */,
