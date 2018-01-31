@@ -43,7 +43,7 @@ namespace GDMonoUtils {
 
 typedef MonoObject *(*MarshalUtils_DictToArrays)(MonoObject *, MonoArray **, MonoArray **, MonoObject **);
 typedef MonoObject *(*MarshalUtils_ArraysToDict)(MonoArray *, MonoArray *, MonoObject **);
-typedef MonoObject *(*SignalAwaiter_SignalCallback)(MonoObject *, MonoArray **, MonoObject **);
+typedef MonoObject *(*SignalAwaiter_SignalCallback)(MonoObject *, MonoArray *, MonoObject **);
 typedef MonoObject *(*SignalAwaiter_FailureCallback)(MonoObject *, MonoObject **);
 typedef MonoObject *(*GodotTaskScheduler_Activate)(MonoObject *, MonoObject **);
 typedef MonoArray *(*StackTrace_GetFrames)(MonoObject *, MonoObject **);
@@ -129,10 +129,16 @@ struct MonoCache {
 
 	Ref<MonoGCHandle> task_scheduler_handle;
 
+	bool corlib_cache_updated;
+	bool godot_api_cache_updated;
+
 	void clear_members();
-	void cleanup() {}
+	void cleanup();
 
 	MonoCache() {
+		corlib_cache_updated = false;
+		godot_api_cache_updated = false;
+
 		clear_members();
 	}
 };

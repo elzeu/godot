@@ -5,21 +5,21 @@
 #
 # basse <basse@roiske.org>, 2017.
 # Bastian Salmela <bastian.salmela@gmail.com>, 2017.
-# ekeimaja <ekeimaja@gmail.com>, 2017.
+# ekeimaja <ekeimaja@gmail.com>, 2017-2018.
 # Jarmo Riikonen <amatrelan@gmail.com>, 2017.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: Godot Engine editor\n"
-"PO-Revision-Date: 2017-12-03 11:31+0000\n"
-"Last-Translator: Bastian Salmela <bastian.salmela@gmail.com>\n"
+"PO-Revision-Date: 2018-01-24 12:10+0000\n"
+"Last-Translator: ekeimaja <ekeimaja@gmail.com>\n"
 "Language-Team: Finnish <https://hosted.weblate.org/projects/godot-engine/"
 "godot/fi/>\n"
 "Language: fi\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8-bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 2.18-dev\n"
+"X-Generator: Weblate 2.19-dev\n"
 
 #: editor/animation_editor.cpp
 msgid "Disabled"
@@ -385,14 +385,6 @@ msgid "Replaced %d occurrence(s)."
 msgstr "Korvattu %d osuvuutta."
 
 #: editor/code_editor.cpp
-msgid "Replace"
-msgstr "Korvaa"
-
-#: editor/code_editor.cpp
-msgid "Replace All"
-msgstr "Korvaa kaikki"
-
-#: editor/code_editor.cpp
 msgid "Match Case"
 msgstr "Huomioi kirjainkoko"
 
@@ -401,48 +393,16 @@ msgid "Whole Words"
 msgstr "Kokonaisia sanoja"
 
 #: editor/code_editor.cpp
-msgid "Selection Only"
-msgstr "Pelkkä valinta"
-
-#: editor/code_editor.cpp editor/editor_node.cpp
-#: editor/plugins/asset_library_editor_plugin.cpp
-#: editor/plugins/script_editor_plugin.cpp
-#: editor/plugins/script_text_editor.cpp
-#: editor/plugins/shader_editor_plugin.cpp editor/project_settings_editor.cpp
-msgid "Search"
-msgstr "Hae"
-
-#: editor/code_editor.cpp editor/editor_help.cpp
-msgid "Find"
-msgstr "Etsi"
-
-#: editor/code_editor.cpp
-msgid "Next"
-msgstr "Seuraava"
-
-#: editor/code_editor.cpp
-msgid "Not found!"
-msgstr "Ei löytynyt!"
-
-#: editor/code_editor.cpp
-msgid "Replace By"
+msgid "Replace"
 msgstr "Korvaa"
 
 #: editor/code_editor.cpp
-msgid "Case Sensitive"
-msgstr "Merkkikokoriippuvainen"
+msgid "Replace All"
+msgstr "Korvaa kaikki"
 
 #: editor/code_editor.cpp
-msgid "Backwards"
-msgstr "Taaksepäin"
-
-#: editor/code_editor.cpp
-msgid "Prompt On Replace"
-msgstr "Kysy vaihdettaessa"
-
-#: editor/code_editor.cpp
-msgid "Skip"
-msgstr "Ohita"
+msgid "Selection Only"
+msgstr "Pelkkä valinta"
 
 #: editor/code_editor.cpp
 msgid "Zoom In"
@@ -1144,7 +1104,7 @@ msgstr "(tyhjä)"
 
 #: editor/editor_data.cpp
 msgid "[unsaved]"
-msgstr ""
+msgstr "[ei tallennettu]"
 
 #: editor/editor_dir_dialog.cpp
 msgid "Please select a base directory first"
@@ -1274,8 +1234,9 @@ msgid "Toggle Mode"
 msgstr "Näytä/piilota"
 
 #: editor/editor_file_dialog.cpp
+#, fuzzy
 msgid "Focus Path"
-msgstr ""
+msgstr "Kohdista polku"
 
 #: editor/editor_file_dialog.cpp
 msgid "Move Favorite Up"
@@ -1411,6 +1372,21 @@ msgstr "Kuvaus:"
 
 #: editor/editor_help.cpp
 #, fuzzy
+msgid "Online Tutorials:"
+msgstr "Oppaat"
+
+#: editor/editor_help.cpp
+#, fuzzy
+msgid ""
+"There are currently no tutorials for this class, you can [color=$color][url="
+"$url]contribute one[/url][/color] or [color=$color][url=$url2]request one[/"
+"url][/color]."
+msgstr ""
+"Tälle metodille ei vielä löydy kuvailua. Voit auttaa meitä [color=$color]"
+"[url=$url]kirjoittamalla sellaisen[/url][/color]!"
+
+#: editor/editor_help.cpp
+#, fuzzy
 msgid "Properties"
 msgstr "Ominaisuudet:"
 
@@ -1448,6 +1424,10 @@ msgstr ""
 msgid "Search Text"
 msgstr "Hae tekstiä"
 
+#: editor/editor_help.cpp
+msgid "Find"
+msgstr "Etsi"
+
 #: editor/editor_log.cpp
 #, fuzzy
 msgid "Output:"
@@ -1473,8 +1453,8 @@ msgstr "Virhe tallennettaessa resurssia!"
 msgid "Save Resource As.."
 msgstr "Tallenna resurssi nimellä..."
 
-#: editor/editor_node.cpp editor/plugins/canvas_item_editor_plugin.cpp
-#: editor/plugins/spatial_editor_plugin.cpp editor/scene_tree_dock.cpp
+#: editor/editor_node.cpp editor/plugins/spatial_editor_plugin.cpp
+#: editor/scene_tree_dock.cpp
 msgid "I see.."
 msgstr "Ymmärrän..."
 
@@ -2147,6 +2127,13 @@ msgstr "Ohje"
 #: editor/editor_node.cpp editor/plugins/script_editor_plugin.cpp
 msgid "Classes"
 msgstr "Luokat"
+
+#: editor/editor_node.cpp editor/plugins/asset_library_editor_plugin.cpp
+#: editor/plugins/script_editor_plugin.cpp
+#: editor/plugins/script_text_editor.cpp
+#: editor/plugins/shader_editor_plugin.cpp editor/project_settings_editor.cpp
+msgid "Search"
+msgstr "Hae"
 
 #: editor/editor_node.cpp editor/plugins/script_editor_plugin.cpp
 msgid "Online Docs"
@@ -3510,7 +3497,7 @@ msgstr "edellinen"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
 msgid "next"
-msgstr ""
+msgstr "seuraava"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
 msgid "last"
@@ -3901,6 +3888,14 @@ msgstr "Lisää %s"
 msgid "Adding %s..."
 msgstr "Lisätään %s..."
 
+#: editor/plugins/canvas_item_editor_plugin.cpp editor/scene_tree_dock.cpp
+msgid "Ok"
+msgstr ""
+
+#: editor/plugins/canvas_item_editor_plugin.cpp
+msgid "Cannot instantiate multiple nodes without root."
+msgstr ""
+
 #: editor/plugins/canvas_item_editor_plugin.cpp
 #: editor/plugins/spatial_editor_plugin.cpp editor/scene_tree_dock.cpp
 msgid "Create Node"
@@ -3910,11 +3905,6 @@ msgstr "Luo Node"
 #: editor/plugins/spatial_editor_plugin.cpp editor/scene_tree_dock.cpp
 msgid "Error instancing scene from %s"
 msgstr "Virhe luotaessa instanssia kohteesta %s"
-
-#: editor/plugins/canvas_item_editor_plugin.cpp
-#: editor/plugins/spatial_editor_plugin.cpp editor/scene_tree_dock.cpp
-msgid "This operation requires a single selected node."
-msgstr "Tämä toiminto vaatii yhden valitun noden."
 
 #: editor/plugins/canvas_item_editor_plugin.cpp
 msgid "Change default type"
@@ -4304,11 +4294,11 @@ msgstr ""
 
 #: editor/plugins/navigation_mesh_generator.cpp
 msgid "Setting up Configuration..."
-msgstr ""
+msgstr "Luodaan konfiguraatiota..."
 
 #: editor/plugins/navigation_mesh_generator.cpp
 msgid "Calculating grid size..."
-msgstr ""
+msgstr "Lasketaan ruudukon kokoa..."
 
 #: editor/plugins/navigation_mesh_generator.cpp
 msgid "Creating heightfield..."
@@ -5335,6 +5325,10 @@ msgstr "Asia kunnossa :("
 msgid "No parent to instance a child at."
 msgstr ""
 
+#: editor/plugins/spatial_editor_plugin.cpp editor/scene_tree_dock.cpp
+msgid "This operation requires a single selected node."
+msgstr "Tämä toiminto vaatii yhden valitun noden."
+
 #: editor/plugins/spatial_editor_plugin.cpp
 msgid "Display Normal"
 msgstr "Näytä normaali"
@@ -6029,7 +6023,7 @@ msgid "Select current edited sub-tile."
 msgstr "Tallenna tällä hetkellä muokattu resurssi."
 
 #: editor/plugins/tile_set_editor_plugin.cpp
-msgid "Select sub-tile to change it's priority."
+msgid "Select sub-tile to change its priority."
 msgstr ""
 
 #: editor/progress_dialog.cpp scene/gui/dialogs.cpp
@@ -6145,20 +6139,13 @@ msgid "Please choose a 'project.godot' file."
 msgstr "Ole hyvä ja valitse 'project.godot' tiedosto."
 
 #: editor/project_manager.cpp
-msgid ""
-"Your project will be created in a non empty folder (you might want to create "
-"a new folder)."
-msgstr ""
-"Projektillesi valitsema hakemisto ei ole tyhjä (ehkä haluaisit luoda uuden "
-"hakemiston)."
+#, fuzzy
+msgid "Please choose an empty folder."
+msgstr "Ole hyvä ja valitse 'project.godot' tiedosto."
 
 #: editor/project_manager.cpp
 msgid "Please choose a folder that does not contain a 'project.godot' file."
 msgstr "Ole hyvä ja valitse hakemisto jossa ei ole 'project.godot' tiedostoa."
-
-#: editor/project_manager.cpp
-msgid "That's a BINGO!"
-msgstr "Sehän on BINGO!"
 
 #: editor/project_manager.cpp
 msgid "Imported Project"
@@ -6526,7 +6513,7 @@ msgstr "Yhdistä Nodeen:"
 
 #: editor/project_settings_editor.cpp
 msgid "Already existing"
-msgstr ""
+msgstr "On jo olemassa"
 
 #: editor/project_settings_editor.cpp
 msgid "Add Input Action"
@@ -6588,7 +6575,7 @@ msgstr "Projektin asetukset"
 
 #: editor/project_settings_editor.cpp editor/settings_config_dialog.cpp
 msgid "General"
-msgstr ""
+msgstr "Yleinen"
 
 #: editor/project_settings_editor.cpp editor/property_editor.cpp
 msgid "Property:"
@@ -6713,7 +6700,7 @@ msgstr "Uusi skripti"
 
 #: editor/property_editor.cpp
 msgid "New %s"
-msgstr ""
+msgstr "Uusi %s"
 
 #: editor/property_editor.cpp
 #, fuzzy
@@ -6816,7 +6803,7 @@ msgstr "Pääskenen argumentit:"
 
 #: editor/run_settings_dialog.cpp
 msgid "Scene Run Settings"
-msgstr ""
+msgstr "Scenen suorittamisasetukset"
 
 #: editor/scene_tree_dock.cpp editor/script_create_dialog.cpp
 #: scene/gui/dialogs.cpp
@@ -6829,10 +6816,6 @@ msgstr ""
 
 #: editor/scene_tree_dock.cpp
 msgid "Error loading scene from %s"
-msgstr ""
-
-#: editor/scene_tree_dock.cpp
-msgid "Ok"
 msgstr ""
 
 #: editor/scene_tree_dock.cpp
@@ -6859,7 +6842,7 @@ msgstr ""
 
 #: editor/scene_tree_dock.cpp
 msgid "Duplicate Node(s)"
-msgstr ""
+msgstr "Monista node(t)"
 
 #: editor/scene_tree_dock.cpp
 msgid "Delete Node(s)?"
@@ -7120,7 +7103,7 @@ msgstr ""
 
 #: editor/script_create_dialog.cpp
 msgid "Directory of the same name exists"
-msgstr ""
+msgstr "Samanniminen hakemisto on jo olemassa"
 
 #: editor/script_create_dialog.cpp
 #, fuzzy
@@ -7274,7 +7257,7 @@ msgstr ""
 
 #: editor/script_editor_debugger.cpp
 msgid "Value"
-msgstr ""
+msgstr "Arvo"
 
 #: editor/script_editor_debugger.cpp
 msgid "Monitors"
@@ -7286,7 +7269,7 @@ msgstr ""
 
 #: editor/script_editor_debugger.cpp
 msgid "Total:"
-msgstr ""
+msgstr "Yhteensä:"
 
 #: editor/script_editor_debugger.cpp
 msgid "Video Mem"
@@ -7298,7 +7281,7 @@ msgstr ""
 
 #: editor/script_editor_debugger.cpp
 msgid "Type"
-msgstr ""
+msgstr "Tyyppi"
 
 #: editor/script_editor_debugger.cpp
 msgid "Format"
@@ -7306,7 +7289,7 @@ msgstr "Muoto"
 
 #: editor/script_editor_debugger.cpp
 msgid "Usage"
-msgstr ""
+msgstr "Käyttö"
 
 #: editor/script_editor_debugger.cpp
 msgid "Misc"
@@ -7403,11 +7386,11 @@ msgstr ""
 
 #: modules/gdnative/gdnative_library_editor_plugin.cpp
 msgid "Platform:"
-msgstr ""
+msgstr "Alusta:"
 
 #: modules/gdnative/gdnative_library_editor_plugin.cpp
 msgid "Platform"
-msgstr ""
+msgstr "Alusta"
 
 #: modules/gdnative/gdnative_library_editor_plugin.cpp
 #, fuzzy
@@ -7435,7 +7418,7 @@ msgstr "Tila:"
 
 #: modules/gdnative/gdnative_library_singleton_editor.cpp
 msgid "Libraries: "
-msgstr ""
+msgstr "Kirjastot: "
 
 #: modules/gdnative/register_types.cpp
 msgid "GDNative"
@@ -7535,15 +7518,15 @@ msgstr ""
 
 #: modules/gridmap/grid_map_editor_plugin.cpp
 msgid "Edit X Axis"
-msgstr ""
+msgstr "Muokkaa X-akselia"
 
 #: modules/gridmap/grid_map_editor_plugin.cpp
 msgid "Edit Y Axis"
-msgstr ""
+msgstr "Muokkaa Y-akselia"
 
 #: modules/gridmap/grid_map_editor_plugin.cpp
 msgid "Edit Z Axis"
-msgstr ""
+msgstr "Muokkaa Z-akselia"
 
 #: modules/gridmap/grid_map_editor_plugin.cpp
 #, fuzzy
@@ -7611,7 +7594,7 @@ msgstr ""
 
 #: modules/mono/editor/godotsharp_editor.cpp
 msgid "Generating C# project..."
-msgstr ""
+msgstr "Luodaan C# projekti..."
 
 #: modules/mono/editor/godotsharp_editor.cpp
 #, fuzzy
@@ -8054,6 +8037,13 @@ msgid ""
 "scenes). The first created one will work, while the rest will be ignored."
 msgstr ""
 
+#: scene/2d/collision_object_2d.cpp
+msgid ""
+"This node has no children shapes, so it can't interact with the space.\n"
+"Consider adding CollisionShape2D or CollisionPolygon2D children nodes to "
+"define its shape."
+msgstr ""
+
 #: scene/2d/collision_polygon_2d.cpp
 msgid ""
 "CollisionPolygon2D only serves to provide a collision shape to a "
@@ -8124,7 +8114,7 @@ msgstr ""
 
 #: scene/2d/physics_body_2d.cpp
 msgid ""
-"Size changes to RigidBody2D (in character or rigid modes) will be overriden "
+"Size changes to RigidBody2D (in character or rigid modes) will be overridden "
 "by the physics engine when running.\n"
 "Change the size in children collision shapes instead."
 msgstr ""
@@ -8183,6 +8173,13 @@ msgstr ""
 msgid "Lighting Meshes: "
 msgstr ""
 
+#: scene/3d/collision_object.cpp
+msgid ""
+"This node has no children shapes, so it can't interact with the space.\n"
+"Consider adding CollisionShape or CollisionPolygon children nodes to define "
+"its shape."
+msgstr ""
+
 #: scene/3d/collision_polygon.cpp
 msgid ""
 "CollisionPolygon only serves to provide a collision shape to a "
@@ -8228,8 +8225,8 @@ msgstr ""
 
 #: scene/3d/physics_body.cpp
 msgid ""
-"Size changes to RigidBody (in character or rigid modes) will be overriden by "
-"the physics engine when running.\n"
+"Size changes to RigidBody (in character or rigid modes) will be overridden "
+"by the physics engine when running.\n"
 "Change the size in children collision shapes instead."
 msgstr ""
 
@@ -8298,12 +8295,12 @@ msgstr ""
 
 #: scene/gui/tree.cpp
 msgid "(Other)"
-msgstr ""
+msgstr "(Muu)"
 
 #: scene/main/scene_tree.cpp
 #, fuzzy
 msgid ""
-"Default Environment as specified in Project Setings (Rendering -> "
+"Default Environment as specified in Project Settings (Rendering -> "
 "Environment -> Default Environment) could not be loaded."
 msgstr ""
 "Projektin asetuksissa määriteltyä oletusympäristöä  (Renderöinti -> Näkymä -"
@@ -8336,6 +8333,37 @@ msgstr "Virhe fontin latauksessa."
 #: scene/resources/dynamic_font.cpp
 msgid "Invalid font size."
 msgstr "Virheellinen fonttikoko."
+
+#~ msgid "Next"
+#~ msgstr "Seuraava"
+
+#~ msgid "Not found!"
+#~ msgstr "Ei löytynyt!"
+
+#~ msgid "Replace By"
+#~ msgstr "Korvaa"
+
+#~ msgid "Case Sensitive"
+#~ msgstr "Merkkikokoriippuvainen"
+
+#~ msgid "Backwards"
+#~ msgstr "Taaksepäin"
+
+#~ msgid "Prompt On Replace"
+#~ msgstr "Kysy vaihdettaessa"
+
+#~ msgid "Skip"
+#~ msgstr "Ohita"
+
+#~ msgid ""
+#~ "Your project will be created in a non empty folder (you might want to "
+#~ "create a new folder)."
+#~ msgstr ""
+#~ "Projektillesi valitsema hakemisto ei ole tyhjä (ehkä haluaisit luoda "
+#~ "uuden hakemiston)."
+
+#~ msgid "That's a BINGO!"
+#~ msgstr "Sehän on BINGO!"
 
 #, fuzzy
 #~ msgid "preview"
@@ -8829,9 +8857,6 @@ msgstr "Virheellinen fonttikoko."
 
 #~ msgid "Export the project to many platforms."
 #~ msgstr "Vie projekti usealle alustalle."
-
-#~ msgid "Tutorials"
-#~ msgstr "Oppaat"
 
 #, fuzzy
 #~ msgid "Open https://godotengine.org at tutorials section."

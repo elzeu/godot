@@ -383,7 +383,7 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 	_initial_set("text_editor/files/restore_scripts_on_load", true);
 	_initial_set("text_editor/completion/complete_file_paths", true);
 	_initial_set("text_editor/files/maximum_recent_files", 20);
-	hints["text_editor/files/maximum_recent_files"] = PropertyInfo(Variant::INT, "text_editor/files/maximum_recent_files", PROPERTY_HINT_RANGE, "1, 200, 0");
+	hints["text_editor/files/maximum_recent_files"] = PropertyInfo(Variant::INT, "text_editor/files/maximum_recent_files", PROPERTY_HINT_RANGE, "1, 200, 1");
 
 	_initial_set("docks/scene_tree/start_create_dialog_fully_expanded", false);
 	_initial_set("docks/scene_tree/draw_relationship_lines", false);
@@ -513,6 +513,7 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 	_initial_set("filesystem/resources/auto_reload_modified_images", true);
 
 	_initial_set("filesystem/import/automatic_reimport_on_sources_changed", true);
+	_initial_set("filesystem/on_save/safe_save_on_backup_then_rename", true);
 
 	if (p_extra_config.is_valid()) {
 

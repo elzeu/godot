@@ -1312,6 +1312,8 @@ Error ResourceFormatLoaderText::rename_dependencies(const String &p_path, const 
 	return ria->rename_dependencies(f, p_path, p_map);
 }
 
+ResourceFormatLoaderText *ResourceFormatLoaderText::singleton = NULL;
+
 Error ResourceFormatLoaderText::convert_file_to_binary(const String &p_src_path, const String &p_dst_path) {
 
 	Error err;
@@ -1411,7 +1413,7 @@ void ResourceFormatSaverTextInstance::_find_resources(const Variant &p_variant, 
 				I = I->next();
 			}
 
-			resource_set.insert(res); //saved after, so the childs it needs are available when loaded
+			resource_set.insert(res); //saved after, so the children it needs are available when loaded
 			saved_resources.push_back(res);
 
 		} break;

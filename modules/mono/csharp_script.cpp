@@ -447,9 +447,10 @@ String CSharpLanguage::_get_indentation() const {
 
 Vector<ScriptLanguage::StackInfo> CSharpLanguage::debug_get_current_stack_info() {
 
+#ifdef DEBUG_ENABLED
 	// Printing an error here will result in endless recursion, so we must be careful
 
-	if (!gdmono->is_runtime_initialized() && GDMono::get_singleton()->get_api_assembly())
+	if (!gdmono->is_runtime_initialized() || !GDMono::get_singleton()->get_api_assembly() || !GDMonoUtils::mono_cache.corlib_cache_updated)
 		return Vector<StackInfo>();
 
 	MonoObject *stack_trace = mono_object_new(mono_domain_get(), CACHED_CLASS(System_Diagnostics_StackTrace)->get_mono_ptr());
@@ -463,8 +464,12 @@ Vector<ScriptLanguage::StackInfo> CSharpLanguage::debug_get_current_stack_info()
 	si = stack_trace_get_info(stack_trace);
 
 	return si;
+#else
+	return Vector<StackInfo>();
+#endif
 }
 
+#ifdef DEBUG_ENABLED
 Vector<ScriptLanguage::StackInfo> CSharpLanguage::stack_trace_get_info(MonoObject *p_stack_trace) {
 
 	// Printing an error here could result in endless recursion, so we must be careful
@@ -503,6 +508,10 @@ Vector<ScriptLanguage::StackInfo> CSharpLanguage::stack_trace_get_info(MonoObjec
 			return Vector<StackInfo>();
 		}
 
+		// TODO
+		// what if the StackFrame method is null (method_decl is empty). should we skip this frame?
+		// can reproduce with a MissingMethodException on internal calls
+
 		sif.file = GDMonoMarshal::mono_string_to_godot(file_name);
 		sif.line = file_line_num;
 		sif.func = GDMonoMarshal::mono_string_to_godot(method_decl);
@@ -510,6 +519,7 @@ Vector<ScriptLanguage::StackInfo> CSharpLanguage::stack_trace_get_info(MonoObjec
 
 	return si;
 }
+#endif
 
 void CSharpLanguage::frame() {
 
@@ -1040,7 +1050,7 @@ bool CSharpInstance::get(const StringName &p_name, Variant &r_ret) const {
 
 		if (field) {
 			MonoObject *value = field->get_value(mono_object);
-			r_ret = GDMonoMarshal::mono_object_to_variant(value, field->get_type());
+			r_ret = GDMonoMarshal::mono_object_to_variant(value);
 			return true;
 		}
 
@@ -1053,7 +1063,7 @@ bool CSharpInstance::get(const StringName &p_name, Variant &r_ret) const {
 				r_ret = Variant();
 				GDMonoUtils::print_unhandled_exception(exc);
 			} else {
-				r_ret = GDMonoMarshal::mono_object_to_variant(value, property->get_type());
+				r_ret = GDMonoMarshal::mono_object_to_variant(value);
 			}
 			return true;
 		}
@@ -1129,10 +1139,13 @@ Variant CSharpInstance::call(const StringName &p_method, const Variant **p_args,
 
 	MonoObject *mono_object = get_mono_object();
 
-	ERR_FAIL_NULL_V(mono_object, Variant());
+	if (!mono_object) {
+		r_error.error = Variant::CallError::CALL_ERROR_INSTANCE_IS_NULL;
+		ERR_FAIL_V(Variant());
+	}
 
 	if (!script.is_valid())
-		return Variant();
+		ERR_FAIL_V(Variant());
 
 	GDMonoClass *top = script->script_class;
 
@@ -1142,8 +1155,10 @@ Variant CSharpInstance::call(const StringName &p_method, const Variant **p_args,
 		if (method) {
 			MonoObject *return_value = method->invoke(mono_object, p_args);
 
+			r_error.error = Variant::CallError::CALL_OK;
+
 			if (return_value) {
-				return GDMonoMarshal::mono_object_to_variant(return_value, method->get_return_type());
+				return GDMonoMarshal::mono_object_to_variant(return_value);
 			} else {
 				return Variant();
 			}
@@ -1537,6 +1552,7 @@ bool CSharpScript::_update_exports() {
 	return false;
 }
 
+#ifdef TOOLS_ENABLED
 bool CSharpScript::_get_member_export(GDMonoClass *p_class, GDMonoClassMember *p_member, PropertyInfo &r_prop_info, bool &r_exported) {
 
 	StringName name = p_member->get_name();
@@ -1607,6 +1623,7 @@ bool CSharpScript::_get_member_export(GDMonoClass *p_class, GDMonoClassMember *p
 
 	return true;
 }
+#endif
 
 void CSharpScript::_clear() {
 
@@ -1629,7 +1646,7 @@ Variant CSharpScript::call(const StringName &p_method, const Variant **p_args, i
 			MonoObject *result = method->invoke(NULL, p_args);
 
 			if (result) {
-				return GDMonoMarshal::mono_object_to_variant(result, method->get_return_type());
+				return GDMonoMarshal::mono_object_to_variant(result);
 			} else {
 				return Variant();
 			}

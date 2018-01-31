@@ -369,7 +369,7 @@ void EditorNode::_notification(int p_what) {
 
 		search_button->set_icon(gui_base->get_icon("Search", "EditorIcons"));
 		object_menu->set_icon(gui_base->get_icon("Tools", "EditorIcons"));
-		// clear_button->set_icon(gui_base->get_icon("Close", "EditorIcons")); dont have access to that node. needs to become a class property
+		// clear_button->set_icon(gui_base->get_icon("Close", "EditorIcons")); don't have access to that node. needs to become a class property
 		update_menu->set_icon(gui_base->get_icon("Collapse", "EditorIcons"));
 		dock_tab_move_left->set_icon(theme->get_icon("Back", "EditorIcons"));
 		dock_tab_move_right->set_icon(theme->get_icon("Forward", "EditorIcons"));
@@ -4239,7 +4239,7 @@ void EditorNode::_bottom_panel_switch(bool p_enable, int p_idx) {
 			bottom_panel_items[i].button->set_pressed(i == p_idx);
 			bottom_panel_items[i].control->set_visible(i == p_idx);
 		}
-		if (ScriptEditor::get_singleton()->get_debugger() == bottom_panel_items[p_idx].control) { // this is the debug panel wich uses tabs, so the top section should be smaller
+		if (ScriptEditor::get_singleton()->get_debugger() == bottom_panel_items[p_idx].control) { // this is the debug panel which uses tabs, so the top section should be smaller
 			bottom_panel->add_style_override("panel", gui_base->get_stylebox("BottomPanelDebuggerOverride", "EditorStyles"));
 		} else {
 			bottom_panel->add_style_override("panel", gui_base->get_stylebox("panel", "TabContainer"));
@@ -4749,12 +4749,12 @@ EditorNode::EditorNode() {
 	scene_distraction = false;
 	script_distraction = false;
 
-	FileAccess::set_backup_save(true);
-
 	TranslationServer::get_singleton()->set_enabled(false);
 	// load settings
 	if (!EditorSettings::get_singleton())
 		EditorSettings::create();
+
+	FileAccess::set_backup_save(EDITOR_GET("filesystem/on_save/safe_save_on_backup_then_rename"));
 
 	{
 		int dpi_mode = EditorSettings::get_singleton()->get("interface/editor/hidpi_mode");
@@ -4815,6 +4815,10 @@ EditorNode::EditorNode() {
 			Ref<EditorSceneImporterGLTF> import_gltf;
 			import_gltf.instance();
 			import_scene->add_importer(import_gltf);
+
+			Ref<EditorSceneImporterESCN> import_escn;
+			import_escn.instance();
+			import_scene->add_importer(import_escn);
 		}
 
 		Ref<ResourceImporterBitMap> import_bitmap;
