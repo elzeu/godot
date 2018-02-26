@@ -935,13 +935,27 @@ void ScriptTextEditor::_edit_option(int p_op) {
 			Ref<Script> scr = get_edited_script();
 			if (scr.is_null())
 				return;
-
 			tx->begin_complex_operation();
-			int line = tx->cursor_get_line();
-			tx->set_line(tx->cursor_get_line(), "");
-			tx->backspace_at_cursor();
-			tx->unfold_line(line);
-			tx->cursor_set_line(line);
+			if (tx->is_selection_active()) {
+				int to_line = tx->get_selection_to_line();
+				int from_line = tx->get_selection_from_line();
+				int count = Math::abs(to_line - from_line) + 1;
+				while (count) {
+					tx->set_line(tx->cursor_get_line(), "");
+					tx->backspace_at_cursor();
+					count--;
+					if (count)
+						tx->unfold_line(from_line);
+				}
+				tx->cursor_set_line(from_line - 1);
+				tx->deselect();
+			} else {
+				int line = tx->cursor_get_line();
+				tx->set_line(tx->cursor_get_line(), "");
+				tx->backspace_at_cursor();
+				tx->unfold_line(line);
+				tx->cursor_set_line(line);
+			}
 			tx->end_complex_operation();
 		} break;
 		case EDIT_CLONE_DOWN: {
@@ -1284,12 +1298,9 @@ Variant ScriptTextEditor::get_drag_data_fw(const Point2 &p_point, Control *p_fro
 bool ScriptTextEditor::can_drop_data_fw(const Point2 &p_point, const Variant &p_data, Control *p_from) const {
 
 	Dictionary d = p_data;
-	if (d.has("type") &&
-			(
-
-					String(d["type"]) == "resource" ||
-					String(d["type"]) == "files" ||
-					String(d["type"]) == "nodes")) {
+	if (d.has("type") && (String(d["type"]) == "resource" ||
+								 String(d["type"]) == "files" ||
+								 String(d["type"]) == "nodes")) {
 
 		return true;
 	}
@@ -1330,6 +1341,10 @@ void ScriptTextEditor::drop_data_fw(const Point2 &p_point, const Variant &p_data
 
 	Dictionary d = p_data;
 
+	TextEdit *te = code_editor->get_text_edit();
+	int row, col;
+	te->_get_mouse_pos(p_point, row, col);
+
 	if (d.has("type") && String(d["type"]) == "resource") {
 
 		Ref<Resource> res = d["resource"];
@@ -1342,7 +1357,9 @@ void ScriptTextEditor::drop_data_fw(const Point2 &p_point, const Variant &p_data
 			return;
 		}
 
-		code_editor->get_text_edit()->insert_text_at_cursor(res->get_path());
+		te->cursor_set_line(row);
+		te->cursor_set_column(col);
+		te->insert_text_at_cursor(res->get_path());
 	}
 
 	if (d.has("type") && String(d["type"]) == "files") {
@@ -1357,7 +1374,9 @@ void ScriptTextEditor::drop_data_fw(const Point2 &p_point, const Variant &p_data
 			text_to_drop += "\"" + String(files[i]).c_escape() + "\"";
 		}
 
-		code_editor->get_text_edit()->insert_text_at_cursor(text_to_drop);
+		te->cursor_set_line(row);
+		te->cursor_set_column(col);
+		te->insert_text_at_cursor(text_to_drop);
 	}
 
 	if (d.has("type") && String(d["type"]) == "nodes") {
@@ -1386,7 +1405,9 @@ void ScriptTextEditor::drop_data_fw(const Point2 &p_point, const Variant &p_data
 			text_to_drop += "\"" + path.c_escape() + "\"";
 		}
 
-		code_editor->get_text_edit()->insert_text_at_cursor(text_to_drop);
+		te->cursor_set_line(row);
+		te->cursor_set_column(col);
+		te->insert_text_at_cursor(text_to_drop);
 	}
 }
 
