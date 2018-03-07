@@ -1,4 +1,5 @@
 import os
+import platform
 import sys
 
 
@@ -123,6 +124,11 @@ def configure(env):
     if not env['builtin_libogg']:
         env.ParseConfig('pkg-config ogg --cflags --libs')
 
+    # On Linux wchar_t should be 32-bits
+    # 16-bit library shouldn't be required due to compiler optimisations
+    if not env['builtin_pcre2']:
+        env.ParseConfig('pkg-config libpcre2-32 --cflags --libs')
+
     ## Flags
 
     # Linkflags below this line should typically stay the last ones
@@ -132,7 +138,12 @@ def configure(env):
     env.Append(CPPPATH=['#platform/server'])
     env.Append(CPPFLAGS=['-DSERVER_ENABLED', '-DUNIX_ENABLED'])
     env.Append(LIBS=['pthread'])
-    env.Append(LIBS=['dl'])
+
+    if (platform.system() == "Linux"):
+        env.Append(LIBS=['dl'])
+
+    if (platform.system().find("BSD") >= 0):
+        env.Append(LIBS=['execinfo'])
 
     # Link those statically for portability
     if env['use_static_cpp']:
