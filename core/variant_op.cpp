@@ -177,7 +177,7 @@ bool Variant::booleanize() const {
 	CASE_TYPE(m_prefix, m_op_name, m_name) {                                  \
 		if (p_b.type == INT) _RETURN(p_a._data.m_type m_op p_b._data._int);   \
 		if (p_b.type == REAL) _RETURN(p_a._data.m_type m_op p_b._data._real); \
-		if (p_b.type == NIL) _RETURN(!p_b.type m_op NIL);                     \
+		if (p_b.type == NIL) _RETURN(!(p_b.type m_op NIL));                   \
                                                                               \
 		_RETURN_FAIL                                                          \
 	};
@@ -252,7 +252,7 @@ bool Variant::booleanize() const {
 	CASE_TYPE(m_prefix, m_op_name, m_name) {                                                                                                            \
 		if (p_b.type == STRING) _RETURN(*reinterpret_cast<const m_type *>(p_a._data._mem) m_op *reinterpret_cast<const String *>(p_b._data._mem));      \
 		if (p_b.type == NODE_PATH) _RETURN(*reinterpret_cast<const m_type *>(p_a._data._mem) m_op *reinterpret_cast<const NodePath *>(p_b._data._mem)); \
-		if (p_b.type == NIL) _RETURN(!p_b.type m_op NIL);                                                                                               \
+		if (p_b.type == NIL) _RETURN(!(p_b.type m_op NIL));                                                                                             \
                                                                                                                                                         \
 		_RETURN_FAIL                                                                                                                                    \
 	};
@@ -278,7 +278,7 @@ bool Variant::booleanize() const {
 		if (p_b.type == m_name)                                                                                                \
 			_RETURN(*reinterpret_cast<const m_type *>(p_a._data._mem) m_op *reinterpret_cast<const m_type *>(p_b._data._mem)); \
 		if (p_b.type == NIL)                                                                                                   \
-			_RETURN(!p_b.type m_op NIL);                                                                                       \
+			_RETURN(!(p_b.type m_op NIL));                                                                                     \
                                                                                                                                \
 		_RETURN_FAIL                                                                                                           \
 	};
@@ -323,7 +323,7 @@ bool Variant::booleanize() const {
 		if (p_b.type == m_name)                                          \
 			_RETURN(*p_a._data.m_sub m_op *p_b._data.m_sub);             \
 		if (p_b.type == NIL)                                             \
-			_RETURN(!p_b.type m_op NIL);                                 \
+			_RETURN(!(p_b.type m_op NIL));                               \
                                                                          \
 		_RETURN_FAIL                                                     \
 	}
@@ -3415,6 +3415,19 @@ Variant Variant::iter_get(const Variant &r_iter, bool &r_valid) const {
 	return Variant();
 }
 
+Variant Variant::duplicate(bool deep) const {
+	switch (type) {
+		// case OBJECT:
+		// 	return operator Object *()->duplicate();
+		case DICTIONARY:
+			return operator Dictionary().duplicate(deep);
+		case ARRAY:
+			return operator Array().duplicate(deep);
+		default:
+			return *this;
+	}
+}
+
 void Variant::blend(const Variant &a, const Variant &b, float c, Variant &r_dst) {
 	if (a.type != b.type) {
 		if (a.is_num() && b.is_num()) {
@@ -3715,8 +3728,9 @@ static const char *_op_names[Variant::OP_MAX] = {
 	"*",
 	"/",
 	"- (negation)",
+	"+ (positive)",
 	"%",
-	"..",
+	"+ (concatenation)",
 	"<<",
 	">>",
 	"&",

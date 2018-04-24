@@ -56,6 +56,12 @@ void ProjectExportDialog::_notification(int p_what) {
 		case NOTIFICATION_POPUP_HIDE: {
 			EditorSettings::get_singleton()->set("interface/dialogs/export_bounds", get_rect());
 		} break;
+		case NOTIFICATION_THEME_CHANGED: {
+			delete_preset->set_icon(get_icon("Remove", "EditorIcons"));
+			Control *panel = custom_feature_display->get_parent_control();
+			if (panel)
+				panel->add_style_override("panel", get_stylebox("bg", "Tree"));
+		} break;
 	}
 }
 
@@ -201,9 +207,9 @@ void ProjectExportDialog::_edit_preset(int p_index) {
 	TreeItem *patch_add = patches->create_item(patch_root);
 	patch_add->set_metadata(0, patchlist.size());
 	if (patchlist.size() == 0)
-		patch_add->set_text(0, "Add initial export..");
+		patch_add->set_text(0, "Add initial export...");
 	else
-		patch_add->set_text(0, "Add previous patches..");
+		patch_add->set_text(0, "Add previous patches...");
 
 	patch_add->add_button(0, get_icon("folder", "FileDialog"), 1);
 
@@ -797,7 +803,7 @@ ProjectExportDialog::ProjectExportDialog() {
 	preset_vb->add_child(preset_hb);
 
 	add_preset = memnew(MenuButton);
-	add_preset->set_text(TTR("Add.."));
+	add_preset->set_text(TTR("Add..."));
 	add_preset->get_popup()->connect("index_pressed", this, "_add_preset");
 	preset_hb->add_child(add_preset);
 	MarginContainer *mc = memnew(MarginContainer);
@@ -980,6 +986,10 @@ ProjectExportDialog::ProjectExportDialog() {
 	editor_icons = "EditorIcons";
 
 	default_filename = EditorSettings::get_singleton()->get_project_metadata("export_options", "default_filename", String());
+
+	if (default_filename == "") {
+		default_filename = ProjectSettings::get_singleton()->get("application/config/name");
+	}
 }
 
 ProjectExportDialog::~ProjectExportDialog() {

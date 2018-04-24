@@ -1046,14 +1046,14 @@ GridMapEditor::GridMapEditor(EditorNode *p_editor) {
 	options->get_popup()->add_item(TTR("Previous Floor"), MENU_OPTION_PREV_LEVEL, KEY_Q);
 	options->get_popup()->add_item(TTR("Next Floor"), MENU_OPTION_NEXT_LEVEL, KEY_E);
 	options->get_popup()->add_separator();
-	options->get_popup()->add_check_item(TTR("Clip Disabled"), MENU_OPTION_CLIP_DISABLED);
+	options->get_popup()->add_radio_check_item(TTR("Clip Disabled"), MENU_OPTION_CLIP_DISABLED);
 	options->get_popup()->set_item_checked(options->get_popup()->get_item_index(MENU_OPTION_CLIP_DISABLED), true);
-	options->get_popup()->add_check_item(TTR("Clip Above"), MENU_OPTION_CLIP_ABOVE);
-	options->get_popup()->add_check_item(TTR("Clip Below"), MENU_OPTION_CLIP_BELOW);
+	options->get_popup()->add_radio_check_item(TTR("Clip Above"), MENU_OPTION_CLIP_ABOVE);
+	options->get_popup()->add_radio_check_item(TTR("Clip Below"), MENU_OPTION_CLIP_BELOW);
 	options->get_popup()->add_separator();
-	options->get_popup()->add_check_item(TTR("Edit X Axis"), MENU_OPTION_X_AXIS, KEY_Z);
-	options->get_popup()->add_check_item(TTR("Edit Y Axis"), MENU_OPTION_Y_AXIS, KEY_X);
-	options->get_popup()->add_check_item(TTR("Edit Z Axis"), MENU_OPTION_Z_AXIS, KEY_C);
+	options->get_popup()->add_radio_check_item(TTR("Edit X Axis"), MENU_OPTION_X_AXIS, KEY_Z);
+	options->get_popup()->add_radio_check_item(TTR("Edit Y Axis"), MENU_OPTION_Y_AXIS, KEY_X);
+	options->get_popup()->add_radio_check_item(TTR("Edit Z Axis"), MENU_OPTION_Z_AXIS, KEY_C);
 	options->get_popup()->set_item_checked(options->get_popup()->get_item_index(MENU_OPTION_Y_AXIS), true);
 	options->get_popup()->add_separator();
 	options->get_popup()->add_item(TTR("Cursor Rotate X"), MENU_OPTION_CURSOR_ROTATE_X, KEY_A);
@@ -1269,9 +1269,10 @@ GridMapEditor::~GridMapEditor() {
 			VisualServer::get_singleton()->free(grid_instance[i]);
 		if (cursor_instance.is_valid())
 			VisualServer::get_singleton()->free(cursor_instance);
-		if (selection_level_instance[i].is_valid()) {
+		if (selection_level_instance[i].is_valid())
 			VisualServer::get_singleton()->free(selection_level_instance[i]);
-		}
+		if (selection_level_mesh[i].is_valid())
+			VisualServer::get_singleton()->free(selection_level_mesh[i]);
 	}
 
 	VisualServer::get_singleton()->free(selection_mesh);

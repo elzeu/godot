@@ -46,7 +46,8 @@
 
 enum VideoDriver {
 	VIDEO_DRIVER_GLES3,
-	VIDEO_DRIVER_GLES2
+	VIDEO_DRIVER_GLES2,
+	VIDEO_DRIVER_MAX,
 };
 
 class OS {
@@ -203,6 +204,18 @@ public:
 	virtual bool is_window_always_on_top() const { return false; }
 	virtual void request_attention() {}
 	virtual void center_window();
+
+	// Returns window area free of hardware controls and other obstacles.
+	// The application should use this to determine where to place UI elements.
+	//
+	// Keep in mind the area returned is in window coordinates rather than
+	// viewport coordinates - you should perform the conversion on your own.
+	//
+	// The maximum size of the area is Rect2(0, 0, window_size.width, window_size.height).
+	virtual Rect2 get_window_safe_area() const {
+		Size2 window_size = get_window_size();
+		return Rect2(0, 0, window_size.width, window_size.height);
+	}
 
 	virtual void set_borderless_window(bool p_borderless) {}
 	virtual bool get_borderless_window() { return 0; }

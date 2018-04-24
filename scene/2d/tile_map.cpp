@@ -142,16 +142,20 @@ void TileMap::_update_quadrant_transform() {
 
 void TileMap::set_tileset(const Ref<TileSet> &p_tileset) {
 
-	if (tile_set.is_valid())
+	if (tile_set.is_valid()) {
 		tile_set->disconnect("changed", this, "_recreate_quadrants");
+		tile_set->remove_change_receptor(this);
+	}
 
 	_clear_quadrants();
 	tile_set = p_tileset;
 
-	if (tile_set.is_valid())
+	if (tile_set.is_valid()) {
 		tile_set->connect("changed", this, "_recreate_quadrants");
-	else
+		tile_set->add_change_receptor(this);
+	} else {
 		clear();
+	}
 
 	_recreate_quadrants();
 	emit_signal("settings_changed");
@@ -261,10 +265,16 @@ void TileMap::_update_dirty_quadrants() {
 
 	SceneTree *st = SceneTree::get_singleton();
 	Color debug_collision_color;
+	Color debug_navigation_color;
 
 	bool debug_shapes = st && st->is_debugging_collisions_hint();
 	if (debug_shapes) {
 		debug_collision_color = st->get_debug_collisions_color();
+	}
+
+	bool debug_navigation = st && st->is_debugging_navigation_hint();
+	if (debug_navigation) {
+		debug_navigation_color = st->get_debug_navigation_color();
 	}
 
 	while (dirty_quadrant_list.first()) {
@@ -493,6 +503,55 @@ void TileMap::_update_dirty_quadrants() {
 					np.id = pid;
 					np.xform = xform;
 					q.navpoly_ids[E->key()] = np;
+
+					if (debug_navigation) {
+						RID debug_navigation_item = vs->canvas_item_create();
+						vs->canvas_item_set_parent(debug_navigation_item, canvas_item);
+						vs->canvas_item_set_z_as_relative_to_parent(debug_navigation_item, false);
+						vs->canvas_item_set_z_index(debug_navigation_item, VS::CANVAS_ITEM_Z_MAX - 2); // Display one below collision debug
+
+						if (debug_navigation_item.is_valid()) {
+							PoolVector<Vector2> navigation_polygon_vertices = navpoly->get_vertices();
+							int vsize = navigation_polygon_vertices.size();
+
+							if (vsize > 2) {
+								Vector<Color> colors;
+								Vector<Vector2> vertices;
+								vertices.resize(vsize);
+								colors.resize(vsize);
+								{
+									PoolVector<Vector2>::Read vr = navigation_polygon_vertices.read();
+									for (int i = 0; i < vsize; i++) {
+										vertices[i] = vr[i];
+										colors[i] = debug_navigation_color;
+									}
+								}
+
+								Vector<int> indices;
+
+								for (int i = 0; i < navpoly->get_polygon_count(); i++) {
+									Vector<int> polygon = navpoly->get_polygon(i);
+
+									for (int j = 2; j < polygon.size(); j++) {
+
+										int kofs[3] = { 0, j - 1, j };
+										for (int k = 0; k < 3; k++) {
+
+											int idx = polygon[kofs[k]];
+											ERR_FAIL_INDEX(idx, vsize);
+											indices.push_back(idx);
+										}
+									}
+								}
+								Transform2D navxform;
+								navxform.set_origin(offset.floor());
+								_fix_cell_transform(navxform, c, npoly_ofs + center_ofs, s);
+
+								vs->canvas_item_set_transform(debug_navigation_item, navxform);
+								vs->canvas_item_add_triangle_array(debug_navigation_item, indices, vertices, colors);
+							}
+						}
+					}
 				}
 			}
 
@@ -830,6 +889,16 @@ void TileMap::update_dirty_bitmask() {
 	}
 }
 
+void TileMap::fix_invalid_tiles() {
+
+	for (Map<PosKey, Cell>::Element *E = tile_map.front(); E; E = E->next()) {
+
+		if (!tile_set->has_tile(get_cell(E->key().x, E->key().y))) {
+			set_cell(E->key().x, E->key().y, INVALID_CELL);
+		}
+	}
+}
+
 int TileMap::get_cell(int p_x, int p_y) const {
 
 	PosKey pk(p_x, p_y);
@@ -1048,6 +1117,10 @@ Rect2 TileMap::_edit_get_rect() const {
 
 	const_cast<TileMap *>(this)->_update_dirty_quadrants();
 	return rect_cache;
+}
+
+bool TileMap::_edit_use_rect() const {
+	return true;
 }
 
 void TileMap::set_collision_layer(uint32_t p_layer) {
@@ -1515,6 +1588,7 @@ void TileMap::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_cell_y_flipped", "x", "y"), &TileMap::is_cell_y_flipped);
 	ClassDB::bind_method(D_METHOD("is_cell_transposed", "x", "y"), &TileMap::is_cell_transposed);
 
+	ClassDB::bind_method(D_METHOD("fix_invalid_tiles"), &TileMap::fix_invalid_tiles);
 	ClassDB::bind_method(D_METHOD("clear"), &TileMap::clear);
 
 	ClassDB::bind_method(D_METHOD("get_used_cells"), &TileMap::get_used_cells);
@@ -1573,6 +1647,12 @@ void TileMap::_bind_methods() {
 	BIND_ENUM_CONSTANT(TILE_ORIGIN_BOTTOM_LEFT);
 }
 
+void TileMap::_changed_callback(Object *p_changed, const char *p_prop) {
+	if (tile_set.is_valid() && tile_set.ptr() == p_changed) {
+		emit_signal("settings_changed");
+	}
+}
+
 TileMap::TileMap() {
 
 	rect_cache_dirty = true;
@@ -1600,6 +1680,9 @@ TileMap::TileMap() {
 }
 
 TileMap::~TileMap() {
+
+	if (tile_set.is_valid())
+		tile_set->remove_change_receptor(this);
 
 	clear();
 }

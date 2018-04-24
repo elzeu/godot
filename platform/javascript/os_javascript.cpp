@@ -33,6 +33,7 @@
 #include "core/engine.h"
 #include "core/io/file_access_buffered_fa.h"
 #include "dom_keys.h"
+#include "drivers/gles2/rasterizer_gles2.h"
 #include "drivers/gles3/rasterizer_gles3.h"
 #include "drivers/unix/dir_access_unix.h"
 #include "drivers/unix/file_access_unix.h"
@@ -57,12 +58,19 @@ static void dom2godot_mod(T emscripten_event_ptr, Ref<InputEventWithModifiers> g
 
 int OS_JavaScript::get_video_driver_count() const {
 
-	return 1;
+	return VIDEO_DRIVER_MAX;
 }
 
 const char *OS_JavaScript::get_video_driver_name(int p_driver) const {
 
-	return "GLES3";
+	switch (p_driver) {
+		case VIDEO_DRIVER_GLES3:
+			return "GLES3";
+		case VIDEO_DRIVER_GLES2:
+			return "GLES2";
+	}
+	ERR_EXPLAIN("Invalid video driver index " + itos(p_driver));
+	ERR_FAIL_V(NULL);
 }
 
 int OS_JavaScript::get_audio_driver_count() const {
@@ -405,13 +413,12 @@ static EM_BOOL joy_callback_func(int p_type, const EmscriptenGamepadEvent *p_eve
 	return false;
 }
 
-extern "C" {
-void send_notification(int notif) {
+extern "C" EMSCRIPTEN_KEEPALIVE void send_notification(int notif) {
+
 	if (notif == MainLoop::NOTIFICATION_WM_MOUSE_ENTER || notif == MainLoop::NOTIFICATION_WM_MOUSE_EXIT) {
 		_cursor_inside_canvas = notif == MainLoop::NOTIFICATION_WM_MOUSE_ENTER;
 	}
 	OS_JavaScript::get_singleton()->get_main_loop()->notification(notif);
-}
 }
 
 Error OS_JavaScript::initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver) {
@@ -422,8 +429,21 @@ Error OS_JavaScript::initialize(const VideoMode &p_desired, int p_video_driver, 
 	emscripten_webgl_init_context_attributes(&attributes);
 	attributes.alpha = false;
 	attributes.antialias = false;
-	attributes.majorVersion = 2;
+	ERR_FAIL_INDEX_V(p_video_driver, VIDEO_DRIVER_MAX, ERR_INVALID_PARAMETER);
+	switch (p_video_driver) {
+		case VIDEO_DRIVER_GLES3:
+			attributes.majorVersion = 2;
+			RasterizerGLES3::register_config();
+			RasterizerGLES3::make_current();
+			break;
+		case VIDEO_DRIVER_GLES2:
+			attributes.majorVersion = 1;
+			RasterizerGLES2::register_config();
+			RasterizerGLES2::make_current();
+			break;
+	}
 	EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context(NULL, &attributes);
+	ERR_EXPLAIN("WebGL " + itos(attributes.majorVersion) + ".0 not available");
 	ERR_FAIL_COND_V(emscripten_webgl_make_context_current(ctx) != EMSCRIPTEN_RESULT_SUCCESS, ERR_UNAVAILABLE);
 
 	video_mode = p_desired;
@@ -449,9 +469,6 @@ Error OS_JavaScript::initialize(const VideoMode &p_desired, int p_video_driver, 
 
 	AudioDriverManager::initialize(p_audio_driver);
 
-	RasterizerGLES3::register_config();
-	RasterizerGLES3::make_current();
-
 	print_line("Init VS");
 
 	visual_server = memnew(VisualServerRaster());
@@ -461,8 +478,6 @@ Error OS_JavaScript::initialize(const VideoMode &p_desired, int p_video_driver, 
 
 	input = memnew(InputDefault);
 	_input = input;
-
-	power_manager = memnew(PowerJavascript);
 
 #define EM_CHECK(ev)                         \
 	if (result != EMSCRIPTEN_RESULT_SUCCESS) \
@@ -950,15 +965,21 @@ String OS_JavaScript::get_joy_guid(int p_device) const {
 }
 
 OS::PowerState OS_JavaScript::get_power_state() {
-	return power_manager->get_power_state();
+
+	WARN_PRINT("Power management is not supported for the HTML5 platform, defaulting to POWERSTATE_UNKNOWN");
+	return OS::POWERSTATE_UNKNOWN;
 }
 
 int OS_JavaScript::get_power_seconds_left() {
-	return power_manager->get_power_seconds_left();
+
+	WARN_PRINT("Power management is not supported for the HTML5 platform, defaulting to -1");
+	return -1;
 }
 
 int OS_JavaScript::get_power_percent_left() {
-	return power_manager->get_power_percent_left();
+
+	WARN_PRINT("Power management is not supported for the HTML5 platform, defaulting to -1");
+	return -1;
 }
 
 bool OS_JavaScript::_check_internal_feature_support(const String &p_feature) {
