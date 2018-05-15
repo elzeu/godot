@@ -124,7 +124,6 @@ private:
 	void shift_selection_check_post(bool);
 
 	void selection_fill_at_cursor();
-	void selection_delete();
 	void set_window_pos(int p_pos);
 
 	void set_cursor_at_pixel_pos(int p_x);
@@ -135,9 +134,7 @@ private:
 	void clear_internal();
 	void changed_internal();
 
-#ifdef TOOLS_ENABLED
 	void _editor_settings_changed();
-#endif
 
 	void _gui_input(Ref<InputEvent> p_event);
 	void _notification(int p_what);
@@ -160,6 +157,7 @@ public:
 
 	void select(int p_from = 0, int p_to = -1);
 	void select_all();
+	void selection_delete();
 	void deselect();
 
 	void delete_char();

@@ -61,7 +61,7 @@ Ref<Script> GDScriptLanguage::get_template(const String &p_class_name, const Str
 					   "# var b = \"textvar\"\n\n" +
 					   "func _ready():\n" +
 					   "%TS%# Called when the node is added to the scene for the first time.\n" +
-					   "%TS%# Initialization here\n" +
+					   "%TS%# Initialization here.\n" +
 					   "%TS%pass\n\n" +
 					   "#func _process(delta):\n" +
 					   "#%TS%# Called every frame. Delta is time since last frame.\n" +
@@ -1522,6 +1522,13 @@ static void _find_identifiers(GDScriptCompletionContext &context, int p_line, bo
 		result.insert(_type_names[i]);
 	}
 
+	List<String> reserved_words;
+	GDScriptLanguage::get_singleton()->get_reserved_words(&reserved_words);
+
+	for (List<String>::Element *E = reserved_words.front(); E; E = E->next()) {
+		result.insert(E->get());
+	}
+
 	//autoload singletons
 	List<PropertyInfo> props;
 	ProjectSettings::get_singleton()->get_property_list(&props);
@@ -2642,6 +2649,18 @@ Error GDScriptLanguage::lookup_code(const String &p_code, const String &p_symbol
 	context.function = p.get_completion_function();
 	context.base = p_owner;
 	context.base_path = p_base_path;
+
+	if (context._class && context._class->extends_class.size() > 0) {
+		bool success = false;
+		ClassDB::get_integer_constant(context._class->extends_class[0], p_symbol, &success);
+		if (success) {
+			r_result.type = ScriptLanguage::LookupResult::RESULT_CLASS_CONSTANT;
+			r_result.class_name = context._class->extends_class[0];
+			r_result.class_member = p_symbol;
+			return OK;
+		}
+	}
+
 	bool isfunction = false;
 
 	switch (p.get_completion_type()) {

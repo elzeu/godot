@@ -157,7 +157,7 @@ void CSGShape::_update_shape() {
 			for (int j = 0; j < 3; j++) {
 				Vector3 v = n->faces[i].vertices[j];
 				Vector3 add;
-				if (vec_map.lookup(v, &add)) {
+				if (vec_map.lookup(v, add)) {
 					add += p.normal;
 				} else {
 					add = p.normal;
@@ -233,7 +233,7 @@ void CSGShape::_update_shape() {
 
 				Vector3 normal = p.normal;
 
-				if (n->faces[i].smooth && vec_map.lookup(v, &normal)) {
+				if (n->faces[i].smooth && vec_map.lookup(v, normal)) {
 					normal.normalize();
 				}
 
@@ -389,9 +389,9 @@ void CSGShape::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_collision"), "set_use_collision", "is_using_collision");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "snap", PROPERTY_HINT_RANGE, "0.0001,1,0.001"), "set_snap", "get_snap");
 
-	BIND_CONSTANT(OPERATION_UNION);
-	BIND_CONSTANT(OPERATION_INTERSECTION);
-	BIND_CONSTANT(OPERATION_SUBTRACTION);
+	BIND_ENUM_CONSTANT(OPERATION_UNION);
+	BIND_ENUM_CONSTANT(OPERATION_INTERSECTION);
+	BIND_ENUM_CONSTANT(OPERATION_SUBTRACTION);
 }
 
 CSGShape::CSGShape() {

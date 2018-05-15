@@ -656,6 +656,7 @@ void LineEdit::_notification(int p_what) {
 			}
 
 			int caret_height = font->get_height() > y_area ? y_area : font->get_height();
+			FontDrawer drawer(font, Color(1, 1, 1));
 			while (true) {
 
 				//end of string, break!
@@ -683,7 +684,7 @@ void LineEdit::_notification(int p_what) {
 								VisualServer::get_singleton()->canvas_item_add_rect(ci, Rect2(Point2(x_ofs, y_ofs + caret_height), Size2(im_char_width, 1)), font_color);
 							}
 
-							font->draw_char(ci, Point2(x_ofs, y_ofs + font_ascent), cchar, next, font_color);
+							drawer.draw_char(ci, Point2(x_ofs, y_ofs + font_ascent), cchar, next, font_color);
 
 							x_ofs += im_char_width;
 							ofs++;
@@ -704,7 +705,7 @@ void LineEdit::_notification(int p_what) {
 				if (selected)
 					VisualServer::get_singleton()->canvas_item_add_rect(ci, Rect2(Point2(x_ofs, y_ofs), Size2(char_width, caret_height)), selection_color);
 
-				font->draw_char(ci, Point2(x_ofs, y_ofs + font_ascent), cchar, next, selected ? font_color_selected : font_color);
+				drawer.draw_char(ci, Point2(x_ofs, y_ofs + font_ascent), cchar, next, selected ? font_color_selected : font_color);
 
 				if (char_ofs == cursor_pos && draw_caret) {
 					if (ime_text.length() == 0) {
@@ -737,7 +738,7 @@ void LineEdit::_notification(int p_what) {
 							VisualServer::get_singleton()->canvas_item_add_rect(ci, Rect2(Point2(x_ofs, y_ofs + caret_height), Size2(im_char_width, 1)), font_color);
 						}
 
-						font->draw_char(ci, Point2(x_ofs, y_ofs + font_ascent), cchar, next, font_color);
+						drawer.draw_char(ci, Point2(x_ofs, y_ofs + font_ascent), cchar, next, font_color);
 
 						x_ofs += im_char_width;
 						ofs++;
@@ -1143,7 +1144,6 @@ void LineEdit::clear_internal() {
 
 	_clear_undo_stack();
 	cached_width = 0;
-	cached_placeholder_width = 0;
 	cursor_pos = 0;
 	window_pos = 0;
 	undo_text = "";
@@ -1350,12 +1350,12 @@ PopupMenu *LineEdit::get_menu() const {
 	return menu;
 }
 
-#ifdef TOOLS_ENABLED
 void LineEdit::_editor_settings_changed() {
+#ifdef TOOLS_ENABLED
 	cursor_set_blink_enabled(EDITOR_DEF("text_editor/cursor/caret_blink", false));
 	cursor_set_blink_speed(EDITOR_DEF("text_editor/cursor/caret_blink_speed", 0.65));
-}
 #endif
+}
 
 void LineEdit::set_expand_to_text_length(bool p_enabled) {
 
@@ -1424,9 +1424,7 @@ void LineEdit::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_text_changed"), &LineEdit::_text_changed);
 	ClassDB::bind_method(D_METHOD("_toggle_draw_caret"), &LineEdit::_toggle_draw_caret);
 
-#ifdef TOOLS_ENABLED
 	ClassDB::bind_method("_editor_settings_changed", &LineEdit::_editor_settings_changed);
-#endif
 
 	ClassDB::bind_method(D_METHOD("set_align", "align"), &LineEdit::set_align);
 	ClassDB::bind_method(D_METHOD("get_align"), &LineEdit::get_align);

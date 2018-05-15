@@ -302,7 +302,6 @@ void TextEdit::_update_scrollbars() {
 
 	int hscroll_rows = ((hmin.height - 1) / get_row_height()) + 1;
 	int visible_rows = get_visible_rows();
-	int num_rows = MAX(visible_rows, num_lines_from(CLAMP(cursor.line_ofs, 0, text.size() - 1), MIN(visible_rows, text.size() - 1 - cursor.line_ofs)));
 
 	int total_rows = (is_hiding_enabled() ? get_total_unhidden_rows() : text.size());
 	if (scroll_past_end_of_file_enabled) {
@@ -782,6 +781,7 @@ void TextEdit::_notification(int p_what) {
 			int line = cursor.line_ofs - 1;
 			// another row may be visible during smooth scrolling
 			int draw_amount = visible_rows + (smooth_scroll_enabled ? 1 : 0);
+			FontDrawer drawer(cache.font, Color(1, 1, 1));
 			for (int i = 0; i < draw_amount; i++) {
 
 				line++;
@@ -1040,7 +1040,7 @@ void TextEdit::_notification(int p_what) {
 
 							if (brace_open_mismatch)
 								color = cache.brace_mismatch_color;
-							cache.font->draw_char(ci, Point2i(char_ofs + char_margin + ofs_x, ofs_y + ascent), '_', str[j + 1], in_selection && override_selected_font_color ? cache.font_selected_color : color);
+							drawer.draw_char(ci, Point2i(char_ofs + char_margin + ofs_x, ofs_y + ascent), '_', str[j + 1], in_selection && override_selected_font_color ? cache.font_selected_color : color);
 						}
 
 						if (
@@ -1049,7 +1049,7 @@ void TextEdit::_notification(int p_what) {
 
 							if (brace_close_mismatch)
 								color = cache.brace_mismatch_color;
-							cache.font->draw_char(ci, Point2i(char_ofs + char_margin + ofs_x, ofs_y + ascent), '_', str[j + 1], in_selection && override_selected_font_color ? cache.font_selected_color : color);
+							drawer.draw_char(ci, Point2i(char_ofs + char_margin + ofs_x, ofs_y + ascent), '_', str[j + 1], in_selection && override_selected_font_color ? cache.font_selected_color : color);
 						}
 					}
 
@@ -1082,7 +1082,7 @@ void TextEdit::_notification(int p_what) {
 									VisualServer::get_singleton()->canvas_item_add_rect(ci, Rect2(Point2(char_ofs + char_margin, ofs_y + get_row_height()), Size2(im_char_width, 1)), color);
 								}
 
-								cache.font->draw_char(ci, Point2(char_ofs + char_margin + ofs_x, ofs_y + ascent), cchar, next, color);
+								drawer.draw_char(ci, Point2(char_ofs + char_margin + ofs_x, ofs_y + ascent), cchar, next, color);
 
 								char_ofs += im_char_width;
 								ofs++;
@@ -1109,7 +1109,7 @@ void TextEdit::_notification(int p_what) {
 					}
 
 					if (str[j] >= 32) {
-						int w = cache.font->draw_char(ci, Point2i(char_ofs + char_margin + ofs_x, ofs_y + ascent), str[j], str[j + 1], in_selection && override_selected_font_color ? cache.font_selected_color : color);
+						int w = drawer.draw_char(ci, Point2i(char_ofs + char_margin + ofs_x, ofs_y + ascent), str[j], str[j + 1], in_selection && override_selected_font_color ? cache.font_selected_color : color);
 						if (underlined) {
 							draw_rect(Rect2(char_ofs + char_margin + ofs_x, ofs_y + ascent + 2, w, 1), in_selection && override_selected_font_color ? cache.font_selected_color : color);
 						}
@@ -1158,7 +1158,7 @@ void TextEdit::_notification(int p_what) {
 								VisualServer::get_singleton()->canvas_item_add_rect(ci, Rect2(Point2(char_ofs + char_margin, ofs_y + get_row_height()), Size2(im_char_width, 1)), color);
 							}
 
-							cache.font->draw_char(ci, Point2(char_ofs + char_margin + ofs_x, ofs_y + ascent), cchar, next, color);
+							drawer.draw_char(ci, Point2(char_ofs + char_margin + ofs_x, ofs_y + ascent), cchar, next, color);
 
 							char_ofs += im_char_width;
 							ofs++;
@@ -2410,6 +2410,12 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 					cursor_set_line(line);
 					cursor_set_column(column);
 
+#ifdef APPLE_STYLE_KEYS
+				} else if (k->get_command()) {
+					int cursor_current_column = cursor.column;
+					cursor.column = 0;
+					_remove_text(cursor.line, 0, cursor.line, cursor_current_column);
+#endif
 				} else {
 					if (cursor.line > 0 && is_line_hidden(cursor.line - 1))
 						unfold_line(cursor.line - 1);
@@ -2446,13 +2452,14 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 					break;
 				} else if (k->get_command()) {
 #endif
-					bool prev_char = false;
 					int cc = cursor.column;
 
 					if (cc == 0 && cursor.line > 0) {
 						cursor_set_line(cursor.line - 1);
 						cursor_set_column(text[cursor.line].length());
 					} else {
+						bool prev_char = false;
+
 						while (cc > 0) {
 							bool ischar = _is_text_char(text[cursor.line][cc - 1]);
 
@@ -2507,13 +2514,14 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 					break;
 				} else if (k->get_command()) {
 #endif
-					bool prev_char = false;
 					int cc = cursor.column;
 
 					if (cc == text[cursor.line].length() && cursor.line < text.size() - 1) {
 						cursor_set_line(cursor.line + 1);
 						cursor_set_column(0);
 					} else {
+						bool prev_char = false;
+
 						while (cc < text[cursor.line].length()) {
 							bool ischar = _is_text_char(text[cursor.line][cc]);
 
@@ -2684,7 +2692,11 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 
 					next_line = line;
 					next_column = column;
-
+#ifdef APPLE_STYLE_KEYS
+				} else if (k->get_command()) {
+					next_column = curline_len;
+					next_line = cursor.line;
+#endif
 				} else {
 					next_column = cursor.column < curline_len ? (cursor.column + 1) : 0;
 				}
@@ -2833,13 +2845,64 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 			} break;
 			case KEY_A: {
 
+#ifndef APPLE_STYLE_KEYS
 				if (!k->get_command() || k->get_shift() || k->get_alt()) {
 					scancode_handled = false;
 					break;
 				}
-
 				select_all();
+#else
+				if (k->get_alt() || (!k->get_shift() && !k->get_command() && !k->get_control())) {
+					scancode_handled = false;
+					break;
+				}
+				if (!k->get_shift() && k->get_command())
+					select_all();
+				else if (k->get_control()) {
+					if (k->get_shift())
+						_pre_shift_selection();
 
+					int current_line_whitespace_len = 0;
+					while (current_line_whitespace_len < text[cursor.line].length()) {
+						CharType c = text[cursor.line][current_line_whitespace_len];
+						if (c != '\t' && c != ' ')
+							break;
+						current_line_whitespace_len++;
+					}
+
+					if (cursor_get_column() == current_line_whitespace_len)
+						cursor_set_column(0);
+					else
+						cursor_set_column(current_line_whitespace_len);
+
+					if (k->get_shift())
+						_post_shift_selection();
+					else if (k->get_command() || k->get_control())
+						deselect();
+				}
+			} break;
+			case KEY_E: {
+
+				if (!k->get_control() || k->get_command() || k->get_alt()) {
+					scancode_handled = false;
+					break;
+				}
+
+				if (k->get_shift())
+					_pre_shift_selection();
+
+				if (k->get_command())
+					cursor_set_line(text.size() - 1, true, false);
+				cursor_set_column(text[cursor.line].length());
+
+				if (k->get_shift())
+					_post_shift_selection();
+				else if (k->get_command() || k->get_control())
+					deselect();
+
+				_cancel_completion();
+				completion_hint = "";
+#endif
 			} break;
 			case KEY_X: {
 				if (readonly) {
@@ -4174,6 +4237,7 @@ void TextEdit::paste() {
 
 	String clipboard = OS::get_singleton()->get_clipboard();
 
+	begin_complex_operation();
 	if (selection.active) {
 
 		selection.active = false;
@@ -4190,6 +4254,8 @@ void TextEdit::paste() {
 	}
 
 	_insert_text_at_cursor(clipboard);
+	end_complex_operation();
+
 	update();
 }
 
@@ -4976,6 +5042,11 @@ void TextEdit::set_indent_size(const int p_size) {
 	}
 
 	update();
+}
+
+int TextEdit::get_indent_size() {
+
+	return indent_size;
 }
 
 void TextEdit::set_draw_tabs(bool p_draw) {
