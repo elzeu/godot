@@ -34,7 +34,7 @@
 			<return type="float">
 			</return>
 			<description>
-                Returns the vector's angle in radians with respect to the x-axis, or [code](1, 0)[/code] vector.
+				Returns the vector's angle in radians with respect to the x-axis, or [code](1, 0)[/code] vector.
 				Equivalent to the result of atan2 when called with the vector's x and y as parameters: [code]atan2(x, y)[/code].
 			</description>
 		</method>
@@ -190,7 +190,7 @@
 			<argument index="0" name="n" type="Vector2">
 			</argument>
 			<description>
-                Returns the vector reflected from a plane defined by the given normal.
+				Returns the vector reflected from a plane defined by the given normal.
 			</description>
 		</method>
 		<method name="rotated">
@@ -206,6 +206,18 @@
 			<return type="Vector2">
 			</return>
 			<description>
+			</description>
+		</method>
+		<method name="slerp">
+			<return type="Vector2">
+			</return>
+			<argument index="0" name="b" type="Vector2">
+			</argument>
+			<argument index="1" name="t" type="float">
+			</argument>
+			<description>
+				Returns the result of SLERP between this vector and "b", by amount "t". "t" should be a float of 0.0-1.0, a percentage of how far along the interpolation is.
+				Both vectors need to be normalized.
 			</description>
 		</method>
 		<method name="slide">

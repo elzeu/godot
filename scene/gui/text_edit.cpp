@@ -302,7 +302,7 @@ void TextEdit::Text::remove(int p_at) {
 	text.remove(p_at);
 }
 
-int TextEdit::Text::get_char_width(char c, char next_c, int px) const {
+int TextEdit::Text::get_char_width(CharType c, CharType next_c, int px) const {
 
 	int tab_w = font->get_char_size(' ').width * indent_size;
 	int w = 0;
@@ -2950,13 +2950,13 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 			case KEY_A: {
 
 #ifndef APPLE_STYLE_KEYS
-				if (!k->get_command() || k->get_shift() || k->get_alt()) {
+				if (!k->get_control() || k->get_shift() || k->get_alt()) {
 					scancode_handled = false;
 					break;
 				}
 				select_all();
 #else
-				if (k->get_alt() || (!k->get_shift() && !k->get_command() && !k->get_control())) {
+				if ((!k->get_command() && !k->get_control())) {
 					scancode_handled = false;
 					break;
 				}
@@ -3620,7 +3620,7 @@ void TextEdit::adjust_viewport_to_cursor() {
 		visible_width -= v_scroll->get_combined_minimum_size().width;
 	visible_width -= 20; // give it a little more space
 
-	if (is_wrap_enabled()) {
+	if (!is_wrap_enabled()) {
 		// adjust x offset
 		int cursor_x = get_column_x_offset(cursor.column, text[cursor.line]);
 
@@ -4110,7 +4110,7 @@ Control::CursorShape TextEdit::get_cursor_shape(const Point2 &p_pos) const {
 void TextEdit::set_text(String p_text) {
 
 	setting_text = true;
-	clear();
+	_clear();
 	_insert_text_at_cursor(p_text);
 	clear_undo_history();
 	cursor.column = 0;
@@ -4123,7 +4123,7 @@ void TextEdit::set_text(String p_text) {
 	cursor_set_column(0);
 	update();
 	setting_text = false;
-	_text_changed_emit();
+
 	//get_range()->set(0);
 };
 
@@ -5995,7 +5995,7 @@ void TextEdit::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_line", "line"), &TextEdit::get_line);
 
 	ClassDB::bind_method(D_METHOD("cursor_set_column", "column", "adjust_viewport"), &TextEdit::cursor_set_column, DEFVAL(true));
-	ClassDB::bind_method(D_METHOD("cursor_set_line", "line", "adjust_viewport", "can_be_hidden"), &TextEdit::cursor_set_line, DEFVAL(true), DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("cursor_set_line", "line", "adjust_viewport", "can_be_hidden", "wrap_index"), &TextEdit::cursor_set_line, DEFVAL(true), DEFVAL(true), DEFVAL(0));
 
 	ClassDB::bind_method(D_METHOD("cursor_get_column"), &TextEdit::cursor_get_column);
 	ClassDB::bind_method(D_METHOD("cursor_get_line"), &TextEdit::cursor_get_line);

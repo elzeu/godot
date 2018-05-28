@@ -1292,6 +1292,9 @@ void OS_X11::set_borderless_window(bool p_borderless) {
 	hints.decorations = current_videomode.borderless_window ? 0 : 1;
 	property = XInternAtom(x11_display, "_MOTIF_WM_HINTS", True);
 	XChangeProperty(x11_display, x11_window, property, property, 32, PropModeReplace, (unsigned char *)&hints, 5);
+
+	// Preserve window size
+	set_window_size(Size2(current_videomode.width, current_videomode.height));
 }
 
 bool OS_X11::get_borderless_window() {
@@ -2407,7 +2410,7 @@ void OS_X11::set_cursor_shape(CursorShape p_shape) {
 
 	if (p_shape == current_cursor)
 		return;
-	if (mouse_mode == MOUSE_MODE_VISIBLE) {
+	if (mouse_mode == MOUSE_MODE_VISIBLE && mouse_mode != MOUSE_MODE_CONFINED) {
 		if (cursors[p_shape] != None)
 			XDefineCursor(x11_display, x11_window, cursors[p_shape]);
 		else if (cursors[CURSOR_ARROW] != None)
@@ -2449,6 +2452,8 @@ void OS_X11::set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape, c
 
 		image = texture->get_data();
 
+		ERR_FAIL_COND(!image.is_valid());
+
 		// Create the cursor structure
 		XcursorImage *cursor_image = XcursorImageCreate(texture_size.width, texture_size.height);
 		XcursorUInt image_size = texture_size.width * texture_size.height;
@@ -2460,7 +2465,7 @@ void OS_X11::set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape, c
 		cursor_image->yhot = p_hotspot.y;
 
 		// allocate memory to contain the whole file
-		cursor_image->pixels = (XcursorPixel *)malloc(size);
+		cursor_image->pixels = (XcursorPixel *)memalloc(size);
 
 		image->lock();
 
@@ -2486,6 +2491,9 @@ void OS_X11::set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape, c
 		if (p_shape == CURSOR_ARROW) {
 			XDefineCursor(x11_display, x11_window, cursors[p_shape]);
 		}
+
+		memfree(cursor_image->pixels);
+		XcursorImageDestroy(cursor_image);
 	} else {
 		// Reset to default system cursor
 		if (img[p_shape]) {

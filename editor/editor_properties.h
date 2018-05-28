@@ -1,3 +1,33 @@
+/*************************************************************************/
+/*  editor_properties.h                                                  */
+/*************************************************************************/
+/*                       This file is part of:                           */
+/*                           GODOT ENGINE                                */
+/*                      https://godotengine.org                          */
+/*************************************************************************/
+/* Copyright (c) 2007-2018 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2018 Godot Engine contributors (cf. AUTHORS.md)    */
+/*                                                                       */
+/* Permission is hereby granted, free of charge, to any person obtaining */
+/* a copy of this software and associated documentation files (the       */
+/* "Software"), to deal in the Software without restriction, including   */
+/* without limitation the rights to use, copy, modify, merge, publish,   */
+/* distribute, sublicense, and/or sell copies of the Software, and to    */
+/* permit persons to whom the Software is furnished to do so, subject to */
+/* the following conditions:                                             */
+/*                                                                       */
+/* The above copyright notice and this permission notice shall be        */
+/* included in all copies or substantial portions of the Software.       */
+/*                                                                       */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,       */
+/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF    */
+/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.*/
+/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY  */
+/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,  */
+/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
+/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
+/*************************************************************************/
+
 #ifndef EDITOR_PROPERTIES_H
 #define EDITOR_PROPERTIES_H
 
@@ -8,6 +38,15 @@
 #include "editor/property_selector.h"
 #include "editor/scene_tree_editor.h"
 #include "scene/gui/color_picker.h"
+
+class EditorPropertyNil : public EditorProperty {
+	GDCLASS(EditorPropertyNil, EditorProperty)
+	LineEdit *text;
+
+public:
+	virtual void update_property();
+	EditorPropertyNil();
+};
 
 class EditorPropertyText : public EditorProperty {
 	GDCLASS(EditorPropertyText, EditorProperty)
@@ -201,7 +240,7 @@ protected:
 
 public:
 	virtual void update_property();
-	void setup(int p_min, int p_max);
+	void setup(int p_min, int p_max, bool p_allow_greater, bool p_allow_lesser);
 	EditorPropertyInteger();
 };
 
@@ -231,7 +270,7 @@ protected:
 
 public:
 	virtual void update_property();
-	void setup(double p_min, double p_max, double p_step, bool p_no_slider, bool p_exp_range);
+	void setup(double p_min, double p_max, double p_step, bool p_no_slider, bool p_exp_range, bool p_greater, bool p_lesser);
 	EditorPropertyFloat();
 };
 
@@ -451,7 +490,10 @@ class EditorPropertyResource : public EditorProperty {
 	PopupMenu *menu;
 	EditorFileDialog *file;
 	Vector<String> inheritors_array;
+	EditorInspector *sub_inspector;
 
+	bool use_sub_inspector;
+	bool dropping;
 	String base_type;
 
 	SceneTreeDialog *scene_tree;
@@ -464,6 +506,16 @@ class EditorPropertyResource : public EditorProperty {
 
 	void _update_menu();
 
+	void _sub_inspector_property_keyed(const String &p_property, const Variant &p_value, bool);
+	void _sub_inspector_resource_selected(const RES &p_resource, const String &p_property);
+	void _sub_inspector_object_id_selected(int p_id);
+
+	void _button_draw();
+	Variant get_drag_data_fw(const Point2 &p_point, Control *p_from);
+	bool _is_drop_valid(const Dictionary &p_drag_data) const;
+	bool can_drop_data_fw(const Point2 &p_point, const Variant &p_data, Control *p_from) const;
+	void drop_data_fw(const Point2 &p_point, const Variant &p_data, Control *p_from);
+
 protected:
 	static void _bind_methods();
 	void _notification(int p_what);
@@ -471,6 +523,10 @@ protected:
 public:
 	virtual void update_property();
 	void setup(const String &p_base_type);
+
+	void collapse_all_folding();
+	void expand_all_folding();
+
 	EditorPropertyResource();
 };
 

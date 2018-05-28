@@ -705,7 +705,18 @@ void EditorAssetLibrary::_image_update(bool use_cache, bool final, const PoolByt
 
 		int len = image_data.size();
 		PoolByteArray::Read r = image_data.read();
-		Ref<Image> image = Ref<Image>(memnew(Image(r.ptr(), len)));
+		Ref<Image> image = Ref<Image>(memnew(Image));
+
+		uint8_t png_signature[8] = { 137, 80, 78, 71, 13, 10, 26, 10 };
+		uint8_t jpg_signature[3] = { 255, 216, 255 };
+
+		if (r.ptr()) {
+			if (memcmp(&r[0], &png_signature[0], 8) == 0) {
+				image->copy_internals_from(Image::_png_mem_loader_func(r.ptr(), len));
+			} else if (memcmp(&r[0], &jpg_signature[0], 3) == 0) {
+				image->copy_internals_from(Image::_jpg_mem_loader_func(r.ptr(), len));
+			}
+		}
 
 		if (!image->empty()) {
 			switch (image_queue[p_queue_id].image_type) {
@@ -750,7 +761,7 @@ void EditorAssetLibrary::_image_request_completed(int p_status, int p_code, cons
 
 	ERR_FAIL_COND(!image_queue.has(p_queue_id));
 
-	if (p_status == HTTPRequest::RESULT_SUCCESS) {
+	if (p_status == HTTPRequest::RESULT_SUCCESS && p_code < HTTPClient::RESPONSE_BAD_REQUEST) {
 
 		if (p_code != HTTPClient::RESPONSE_NOT_MODIFIED) {
 			for (int i = 0; i < headers.size(); i++) {
@@ -781,7 +792,7 @@ void EditorAssetLibrary::_image_request_completed(int p_status, int p_code, cons
 		_image_update(p_code == HTTPClient::RESPONSE_NOT_MODIFIED, true, p_data, p_queue_id);
 
 	} else {
-		WARN_PRINTS("Error getting PNG file from URL: " + image_queue[p_queue_id].image_url);
+		// WARN_PRINTS("Error getting image file from URL: " + image_queue[p_queue_id].image_url);
 		Object *obj = ObjectDB::get_instance(image_queue[p_queue_id].target);
 		if (obj) {
 			obj->call("set_image", image_queue[p_queue_id].image_type, image_queue[p_queue_id].image_index, get_icon("DefaultProjectIcon", "EditorIcons"));
@@ -936,41 +947,43 @@ HBoxContainer *EditorAssetLibrary::_make_pages(int p_page, int p_page_count, int
 	if (to > p_page_count)
 		to = p_page_count;
 
-	Color gray = Color(0.65, 0.65, 0.65);
-
 	hbc->add_spacer();
-	hbc->add_constant_override("separation", 10);
+	hbc->add_constant_override("separation", 5);
 
+	Button *first = memnew(Button);
+	first->set_text(TTR("First"));
 	if (p_page != 0) {
-		LinkButton *first = memnew(LinkButton);
-		first->set_text(TTR("first"));
-		first->add_color_override("font_color", gray);
-		first->set_underline_mode(LinkButton::UNDERLINE_MODE_ON_HOVER);
 		first->connect("pressed", this, "_search", varray(0));
-		hbc->add_child(first);
+	} else {
+		first->set_disabled(true);
+		first->set_focus_mode(Control::FOCUS_NONE);
 	}
+	hbc->add_child(first);
 
+	Button *prev = memnew(Button);
+	prev->set_text(TTR("Previous"));
 	if (p_page > 0) {
-		LinkButton *prev = memnew(LinkButton);
-		prev->set_text(TTR("prev"));
-		prev->add_color_override("font_color", gray);
-		prev->set_underline_mode(LinkButton::UNDERLINE_MODE_ON_HOVER);
 		prev->connect("pressed", this, "_search", varray(p_page - 1));
-		hbc->add_child(prev);
+	} else {
+		prev->set_disabled(true);
+		prev->set_focus_mode(Control::FOCUS_NONE);
 	}
+	hbc->add_child(prev);
+	hbc->add_child(memnew(VSeparator));
 
 	for (int i = from; i < to; i++) {
 
 		if (i == p_page) {
 
-			Label *current = memnew(Label);
+			Button *current = memnew(Button);
 			current->set_text(itos(i + 1));
+			current->set_disabled(true);
+			current->set_focus_mode(Control::FOCUS_NONE);
+
 			hbc->add_child(current);
 		} else {
 
-			LinkButton *current = memnew(LinkButton);
-			current->add_color_override("font_color", gray);
-			current->set_underline_mode(LinkButton::UNDERLINE_MODE_ON_HOVER);
+			Button *current = memnew(Button);
 			current->set_text(itos(i + 1));
 			current->connect("pressed", this, "_search", varray(i));
 
@@ -978,28 +991,26 @@ HBoxContainer *EditorAssetLibrary::_make_pages(int p_page, int p_page_count, int
 		}
 	}
 
+	Button *next = memnew(Button);
+	next->set_text(TTR("Next"));
 	if (p_page < p_page_count - 1) {
-		LinkButton *next = memnew(LinkButton);
-		next->set_text(TTR("next"));
-		next->add_color_override("font_color", gray);
-		next->set_underline_mode(LinkButton::UNDERLINE_MODE_ON_HOVER);
 		next->connect("pressed", this, "_search", varray(p_page + 1));
-
-		hbc->add_child(next);
+	} else {
+		next->set_disabled(true);
+		next->set_focus_mode(Control::FOCUS_NONE);
 	}
+	hbc->add_child(memnew(VSeparator));
+	hbc->add_child(next);
 
+	Button *last = memnew(Button);
+	last->set_text(TTR("Last"));
 	if (p_page != p_page_count - 1) {
-		LinkButton *last = memnew(LinkButton);
-		last->set_text(TTR("last"));
-		last->add_color_override("font_color", gray);
-		last->set_underline_mode(LinkButton::UNDERLINE_MODE_ON_HOVER);
-		hbc->add_child(last);
 		last->connect("pressed", this, "_search", varray(p_page_count - 1));
+	} else {
+		last->set_disabled(true);
+		last->set_focus_mode(Control::FOCUS_NONE);
 	}
-
-	Label *totals = memnew(Label);
-	totals->set_text("( " + itos(from * p_page_len) + " - " + itos(from * p_page_len + p_current_items - 1) + " / " + itos(p_total_items) + " )");
-	hbc->add_child(totals);
+	hbc->add_child(last);
 
 	hbc->add_spacer();
 
