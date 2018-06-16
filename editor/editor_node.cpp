@@ -1381,7 +1381,8 @@ void EditorNode::_edit_current() {
 		return;
 	}
 
-	bool capitalize = bool(EDITOR_DEF("interface/editor/capitalize_properties", true));
+	bool capitalize = bool(EDITOR_GET("interface/inspector/capitalize_properties"));
+	bool disable_folding = bool(EDITOR_GET("interface/inspector/disable_folding"));
 	bool is_resource = current_obj->is_class("Resource");
 	bool is_node = current_obj->is_class("Node");
 
@@ -1437,6 +1438,7 @@ void EditorNode::_edit_current() {
 		if (current_obj->is_class("ScriptEditorDebuggerInspectedObject")) {
 			editable_warning = TTR("This is a remote object so changes to it will not be kept.\nPlease read the documentation relevant to debugging to better understand this workflow.");
 			capitalize = false;
+			disable_folding = true;
 		}
 
 		get_inspector()->edit(current_obj);
@@ -1447,6 +1449,10 @@ void EditorNode::_edit_current() {
 
 	if (get_inspector()->is_capitalize_paths_enabled() != capitalize) {
 		get_inspector()->set_enable_capitalize_paths(capitalize);
+	}
+
+	if (get_inspector()->is_using_folding() == disable_folding) {
+		get_inspector()->set_use_folding(!disable_folding);
 	}
 
 	/* Take care of PLUGIN EDITOR */
@@ -2161,7 +2167,7 @@ void EditorNode::_menu_option_confirm(int p_option, bool p_confirmed) {
 			export_template_manager->popup_manager();
 
 		} break;
-		case SETTINGS_TOGGLE_FULLSCREN: {
+		case SETTINGS_TOGGLE_FULLSCREEN: {
 
 			OS::get_singleton()->set_window_fullscreen(!OS::get_singleton()->is_window_fullscreen());
 
@@ -4637,6 +4643,7 @@ EditorNode::EditorNode() {
 	EDITOR_DEF("interface/scene_tabs/restore_scenes_on_load", false);
 	EDITOR_DEF("interface/scene_tabs/show_thumbnail_on_hover", true);
 	EDITOR_DEF("interface/inspector/capitalize_properties", true);
+	EDITOR_DEF("interface/inspector/disable_folding", false);
 	EDITOR_DEF("interface/inspector/open_resources_in_new_inspector", false);
 	EDITOR_DEF("run/auto_save/save_before_running", true);
 
@@ -4834,7 +4841,11 @@ EditorNode::EditorNode() {
 	srt->add_child(tabbar_container);
 	tabbar_container->add_child(scene_tabs);
 	distraction_free = memnew(ToolButton);
+#ifdef OSX_ENABLED
+	distraction_free->set_shortcut(ED_SHORTCUT("editor/distraction_free_mode", TTR("Distraction Free Mode"), KEY_MASK_CMD | KEY_MASK_CTRL | KEY_D));
+#else
 	distraction_free->set_shortcut(ED_SHORTCUT("editor/distraction_free_mode", TTR("Distraction Free Mode"), KEY_MASK_CMD | KEY_MASK_SHIFT | KEY_F11));
+#endif
 	distraction_free->set_tooltip(TTR("Toggle distraction-free mode."));
 	distraction_free->connect("pressed", this, "_toggle_distraction_free_mode");
 	distraction_free->set_icon(gui_base->get_icon("DistractionFree", "EditorIcons"));
@@ -4941,7 +4952,7 @@ EditorNode::EditorNode() {
 	p->add_shortcut(ED_SHORTCUT("editor/save_scene_as", TTR("Save Scene As..."), KEY_MASK_SHIFT + KEY_MASK_CMD + KEY_S), FILE_SAVE_AS_SCENE);
 	p->add_shortcut(ED_SHORTCUT("editor/save_all_scenes", TTR("Save all Scenes"), KEY_MASK_ALT + KEY_MASK_SHIFT + KEY_MASK_CMD + KEY_S), FILE_SAVE_ALL_SCENES);
 	p->add_separator();
-	p->add_shortcut(ED_SHORTCUT("editor/close_scene", TTR("Close Scene"), KEY_MASK_SHIFT + KEY_MASK_CTRL + KEY_W), FILE_CLOSE);
+	p->add_shortcut(ED_SHORTCUT("editor/close_scene", TTR("Close Scene"), KEY_MASK_SHIFT + KEY_MASK_CMD + KEY_W), FILE_CLOSE);
 	p->add_separator();
 	p->add_submenu_item(TTR("Open Recent"), "RecentScenes", FILE_OPEN_RECENT);
 	p->add_separator();
@@ -4994,7 +5005,7 @@ EditorNode::EditorNode() {
 #ifdef OSX_ENABLED
 	p->add_item(TTR("Quit to Project List"), RUN_PROJECT_MANAGER, KEY_MASK_SHIFT + KEY_MASK_ALT + KEY_Q);
 #else
-	p->add_item(TTR("Quit to Project List"), RUN_PROJECT_MANAGER, KEY_MASK_SHIFT + KEY_MASK_CTRL + KEY_Q);
+	p->add_item(TTR("Quit to Project List"), RUN_PROJECT_MANAGER, KEY_MASK_SHIFT + KEY_MASK_CMD + KEY_Q);
 #endif
 
 	PanelContainer *editor_region = memnew(PanelContainer);
@@ -5043,7 +5054,11 @@ EditorNode::EditorNode() {
 	p->add_child(editor_layouts);
 	editor_layouts->connect("id_pressed", this, "_layout_menu_option");
 	p->add_submenu_item(TTR("Editor Layout"), "Layouts");
-	p->add_shortcut(ED_SHORTCUT("editor/fullscreen_mode", TTR("Toggle Fullscreen"), KEY_MASK_SHIFT | KEY_F11), SETTINGS_TOGGLE_FULLSCREN);
+#ifdef OSX_ENABLED
+	p->add_shortcut(ED_SHORTCUT("editor/fullscreen_mode", TTR("Toggle Fullscreen"), KEY_MASK_CMD | KEY_MASK_CTRL | KEY_F), SETTINGS_TOGGLE_FULLSCREEN);
+#else
+	p->add_shortcut(ED_SHORTCUT("editor/fullscreen_mode", TTR("Toggle Fullscreen"), KEY_MASK_SHIFT | KEY_F11), SETTINGS_TOGGLE_FULLSCREEN);
+#endif
 	p->add_separator();
 	p->add_item(TTR("Manage Export Templates"), SETTINGS_MANAGE_EXPORT_TEMPLATES);
 
@@ -5083,7 +5098,11 @@ EditorNode::EditorNode() {
 	play_button->set_focus_mode(Control::FOCUS_NONE);
 	play_button->connect("pressed", this, "_menu_option", make_binds(RUN_PLAY));
 	play_button->set_tooltip(TTR("Play the project."));
+#ifdef OSX_ENABLED
+	play_button->set_shortcut(ED_SHORTCUT("editor/play", TTR("Play"), KEY_MASK_CMD | KEY_B));
+#else
 	play_button->set_shortcut(ED_SHORTCUT("editor/play", TTR("Play"), KEY_F5));
+#endif
 
 	pause_button = memnew(ToolButton);
 	pause_button->set_toggle_mode(true);
@@ -5092,7 +5111,11 @@ EditorNode::EditorNode() {
 	pause_button->set_tooltip(TTR("Pause the scene"));
 	pause_button->set_disabled(true);
 	play_hb->add_child(pause_button);
+#ifdef OSX_ENABLED
+	pause_button->set_shortcut(ED_SHORTCUT("editor/pause_scene", TTR("Pause Scene"), KEY_MASK_CMD | KEY_MASK_CTRL | KEY_Y));
+#else
 	pause_button->set_shortcut(ED_SHORTCUT("editor/pause_scene", TTR("Pause Scene"), KEY_F7));
+#endif
 
 	stop_button = memnew(ToolButton);
 	play_hb->add_child(stop_button);
@@ -5101,7 +5124,11 @@ EditorNode::EditorNode() {
 	stop_button->connect("pressed", this, "_menu_option", make_binds(RUN_STOP));
 	stop_button->set_tooltip(TTR("Stop the scene."));
 	stop_button->set_disabled(true);
+#ifdef OSX_ENABLED
+	stop_button->set_shortcut(ED_SHORTCUT("editor/stop", TTR("Stop"), KEY_MASK_CMD | KEY_PERIOD));
+#else
 	stop_button->set_shortcut(ED_SHORTCUT("editor/stop", TTR("Stop"), KEY_F8));
+#endif
 
 	run_native = memnew(EditorRunNative);
 	play_hb->add_child(run_native);
@@ -5119,7 +5146,11 @@ EditorNode::EditorNode() {
 	play_scene_button->set_icon(gui_base->get_icon("PlayScene", "EditorIcons"));
 	play_scene_button->connect("pressed", this, "_menu_option", make_binds(RUN_PLAY_SCENE));
 	play_scene_button->set_tooltip(TTR("Play the edited scene."));
+#ifdef OSX_ENABLED
+	play_scene_button->set_shortcut(ED_SHORTCUT("editor/play_scene", TTR("Play Scene"), KEY_MASK_CMD | KEY_R));
+#else
 	play_scene_button->set_shortcut(ED_SHORTCUT("editor/play_scene", TTR("Play Scene"), KEY_F6));
+#endif
 
 	play_custom_scene_button = memnew(ToolButton);
 	play_hb->add_child(play_custom_scene_button);
@@ -5128,7 +5159,11 @@ EditorNode::EditorNode() {
 	play_custom_scene_button->set_icon(gui_base->get_icon("PlayCustom", "EditorIcons"));
 	play_custom_scene_button->connect("pressed", this, "_menu_option", make_binds(RUN_PLAY_CUSTOM_SCENE));
 	play_custom_scene_button->set_tooltip(TTR("Play custom scene"));
+#ifdef OSX_ENABLED
+	play_custom_scene_button->set_shortcut(ED_SHORTCUT("editor/play_custom_scene", TTR("Play Custom Scene"), KEY_MASK_CMD | KEY_MASK_SHIFT | KEY_R));
+#else
 	play_custom_scene_button->set_shortcut(ED_SHORTCUT("editor/play_custom_scene", TTR("Play Custom Scene"), KEY_MASK_CMD | KEY_MASK_SHIFT | KEY_F5));
+#endif
 
 	progress_hb = memnew(BackgroundProgress);
 
@@ -5511,10 +5546,17 @@ EditorNode::EditorNode() {
 	print_handler.userdata = this;
 	add_print_handler(&print_handler);
 
+#ifdef OSX_ENABLED
+	ED_SHORTCUT("editor/editor_2d", TTR("Open 2D Editor"), KEY_MASK_ALT | KEY_1);
+	ED_SHORTCUT("editor/editor_3d", TTR("Open 3D Editor"), KEY_MASK_ALT | KEY_2);
+	ED_SHORTCUT("editor/editor_script", TTR("Open Script Editor"), KEY_MASK_ALT | KEY_3);
+	ED_SHORTCUT("editor/editor_help", TTR("Search Help"), KEY_MASK_ALT | KEY_SPACE);
+#else
 	ED_SHORTCUT("editor/editor_2d", TTR("Open 2D Editor"), KEY_F1);
 	ED_SHORTCUT("editor/editor_3d", TTR("Open 3D Editor"), KEY_F2);
 	ED_SHORTCUT("editor/editor_script", TTR("Open Script Editor"), KEY_F3); //hack neded for script editor F3 search to work :) Assign like this or don't use F3
 	ED_SHORTCUT("editor/editor_help", TTR("Search Help"), KEY_F4);
+#endif
 	ED_SHORTCUT("editor/editor_assetlib", TTR("Open Asset Library"));
 	ED_SHORTCUT("editor/editor_next", TTR("Open the next Editor"));
 	ED_SHORTCUT("editor/editor_prev", TTR("Open the previous Editor"));
