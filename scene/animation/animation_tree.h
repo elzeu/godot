@@ -8,7 +8,7 @@
 
 class AnimationNodeBlendTree;
 class AnimationPlayer;
-class AnimationGraphPlayer;
+class AnimationTree;
 
 class AnimationNode : public Resource {
 	GDCLASS(AnimationNode, Resource)
@@ -32,7 +32,7 @@ public:
 
 	float process_input(int p_input, float p_time, bool p_seek, float p_blend);
 
-	friend class AnimationGraphPlayer;
+	friend class AnimationTree;
 
 	struct AnimationState {
 
@@ -62,7 +62,7 @@ public:
 	Vector2 position;
 
 	AnimationNode *parent;
-	AnimationGraphPlayer *player;
+	AnimationTree *player;
 
 	float _blend_node(Ref<AnimationNode> p_node, float p_time, bool p_seek, float p_blend, FilterAction p_filter = FILTER_IGNORE, bool p_optimize = true, float *r_max = NULL);
 
@@ -85,8 +85,8 @@ protected:
 public:
 	void set_parent(AnimationNode *p_parent);
 	Ref<AnimationNode> get_parent() const;
-	virtual void set_graph_player(AnimationGraphPlayer *p_player);
-	AnimationGraphPlayer *get_graph_player() const;
+	virtual void set_tree(AnimationTree *p_player);
+	AnimationTree *get_tree() const;
 	AnimationPlayer *get_player() const;
 
 	virtual float process(float p_time, bool p_seek);
@@ -125,8 +125,8 @@ public:
 	AnimationRootNode() {}
 };
 
-class AnimationGraphPlayer : public Node {
-	GDCLASS(AnimationGraphPlayer, Node)
+class AnimationTree : public Node {
+	GDCLASS(AnimationTree, Node)
 public:
 	enum AnimationProcessMode {
 		ANIMATION_PROCESS_PHYSICS,
@@ -135,6 +135,8 @@ public:
 
 private:
 	struct TrackCache {
+
+		bool root_motion;
 		uint64_t setup_pass;
 		uint64_t process_pass;
 		Animation::TrackType type;
@@ -142,6 +144,7 @@ private:
 		ObjectID object_id;
 
 		TrackCache() {
+			root_motion = false;
 			setup_pass = 0;
 			process_pass = 0;
 			object = NULL;
@@ -235,6 +238,9 @@ private:
 
 	bool started;
 
+	NodePath root_motion_track;
+	Transform root_motion_transform;
+
 protected:
 	void _notification(int p_what);
 	static void _bind_methods();
@@ -257,11 +263,16 @@ public:
 	bool is_state_invalid() const;
 	String get_invalid_state_reason() const;
 
+	void set_root_motion_track(const NodePath &p_track);
+	NodePath get_root_motion_track() const;
+
+	Transform get_root_motion_transform() const;
+
 	uint64_t get_last_process_pass() const;
-	AnimationGraphPlayer();
-	~AnimationGraphPlayer();
+	AnimationTree();
+	~AnimationTree();
 };
 
-VARIANT_ENUM_CAST(AnimationGraphPlayer::AnimationProcessMode)
+VARIANT_ENUM_CAST(AnimationTree::AnimationProcessMode)
 
 #endif // ANIMATION_GRAPH_PLAYER_H

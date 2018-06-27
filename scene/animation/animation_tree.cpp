@@ -1,4 +1,4 @@
-#include "animation_graph_player.h"
+#include "animation_tree.h"
 #include "animation_blend_tree.h"
 #include "core/method_bind_ext.gen.inc"
 #include "engine.h"
@@ -56,11 +56,11 @@ void AnimationNode::make_invalid(const String &p_reason) {
 float AnimationNode::blend_input(int p_input, float p_time, bool p_seek, float p_blend, FilterAction p_filter, bool p_optimize) {
 	ERR_FAIL_INDEX_V(p_input, inputs.size(), 0);
 	ERR_FAIL_COND_V(!state, 0);
-	ERR_FAIL_COND_V(!get_graph_player(), 0); //should not happen, but used to catch bugs
+	ERR_FAIL_COND_V(!get_tree(), 0); //should not happen, but used to catch bugs
 
 	Ref<AnimationNodeBlendTree> tree = get_parent();
 
-	if (!tree.is_valid() && get_graph_player()->get_graph_root().ptr() != this) {
+	if (!tree.is_valid() && get_tree()->get_graph_root().ptr() != this) {
 		make_invalid(RTR("Can't blend input because node is not in a tree"));
 		return 0;
 	}
@@ -204,10 +204,10 @@ String AnimationNode::get_input_name(int p_input) {
 float AnimationNode::get_input_activity(int p_input) const {
 
 	ERR_FAIL_INDEX_V(p_input, inputs.size(), 0);
-	if (!get_graph_player())
+	if (!get_tree())
 		return 0;
 
-	if (get_graph_player()->get_last_process_pass() != inputs[p_input].last_pass) {
+	if (get_tree()->get_last_process_pass() != inputs[p_input].last_pass) {
 		return 0;
 	}
 	return inputs[p_input].activity;
@@ -265,7 +265,7 @@ Ref<AnimationNode> AnimationNode::get_parent() const {
 	return Ref<AnimationNode>();
 }
 
-AnimationGraphPlayer *AnimationNode::get_graph_player() const {
+AnimationTree *AnimationNode::get_tree() const {
 
 	return player;
 }
@@ -316,7 +316,7 @@ Vector2 AnimationNode::get_position() const {
 	return position;
 }
 
-void AnimationNode::set_graph_player(AnimationGraphPlayer *p_player) {
+void AnimationNode::set_tree(AnimationTree *p_player) {
 
 	if (player != NULL && p_player == NULL) {
 		emit_signal("removed_from_graph");
@@ -398,10 +398,10 @@ AnimationNode::AnimationNode() {
 
 ////////////////////
 
-void AnimationGraphPlayer::set_graph_root(const Ref<AnimationNode> &p_root) {
+void AnimationTree::set_graph_root(const Ref<AnimationNode> &p_root) {
 
 	if (root.is_valid()) {
-		root->set_graph_player(NULL);
+		root->set_tree(NULL);
 	}
 	if (p_root.is_valid()) {
 		ERR_EXPLAIN("root node already set to another player");
@@ -410,17 +410,17 @@ void AnimationGraphPlayer::set_graph_root(const Ref<AnimationNode> &p_root) {
 	root = p_root;
 
 	if (root.is_valid()) {
-		root->set_graph_player(this);
+		root->set_tree(this);
 	}
 
 	update_configuration_warning();
 }
 
-Ref<AnimationNode> AnimationGraphPlayer::get_graph_root() const {
+Ref<AnimationNode> AnimationTree::get_graph_root() const {
 	return root;
 }
 
-void AnimationGraphPlayer::set_active(bool p_active) {
+void AnimationTree::set_active(bool p_active) {
 
 	if (active == p_active)
 		return;
@@ -447,12 +447,12 @@ void AnimationGraphPlayer::set_active(bool p_active) {
 	}
 }
 
-bool AnimationGraphPlayer::is_active() const {
+bool AnimationTree::is_active() const {
 
 	return active;
 }
 
-void AnimationGraphPlayer::set_process_mode(AnimationProcessMode p_mode) {
+void AnimationTree::set_process_mode(AnimationProcessMode p_mode) {
 
 	if (process_mode == p_mode)
 		return;
@@ -469,20 +469,20 @@ void AnimationGraphPlayer::set_process_mode(AnimationProcessMode p_mode) {
 	}
 }
 
-AnimationGraphPlayer::AnimationProcessMode AnimationGraphPlayer::get_process_mode() const {
+AnimationTree::AnimationProcessMode AnimationTree::get_process_mode() const {
 	return process_mode;
 }
 
-void AnimationGraphPlayer::_node_removed(Node *p_node) {
+void AnimationTree::_node_removed(Node *p_node) {
 	cache_valid = false;
 }
 
-bool AnimationGraphPlayer::_update_caches(AnimationPlayer *player) {
+bool AnimationTree::_update_caches(AnimationPlayer *player) {
 
 	setup_pass++;
 
 	if (!player->has_node(player->get_root())) {
-		ERR_PRINT("AnimationGraphPlayer: AnimationPlayer root is invalid.");
+		ERR_PRINT("AnimationTree: AnimationPlayer root is invalid.");
 		set_active(false);
 		return false;
 	}
@@ -517,7 +517,7 @@ bool AnimationGraphPlayer::_update_caches(AnimationPlayer *player) {
 				Node *child = parent->get_node_and_resource(path, resource, leftover_path);
 
 				if (!child) {
-					ERR_PRINTS("AnimationGraphPlayer: '" + String(E->get()) + "', couldn't resolve track:  '" + String(path) + "'");
+					ERR_PRINTS("AnimationTree: '" + String(E->get()) + "', couldn't resolve track:  '" + String(path) + "'");
 					continue;
 				}
 
@@ -547,7 +547,7 @@ bool AnimationGraphPlayer::_update_caches(AnimationPlayer *player) {
 						Spatial *spatial = Object::cast_to<Spatial>(child);
 
 						if (!spatial) {
-							ERR_PRINTS("AnimationGraphPlayer: '" + String(E->get()) + "', transform track does not point to spatial:  '" + String(path) + "'");
+							ERR_PRINTS("AnimationTree: '" + String(E->get()) + "', transform track does not point to spatial:  '" + String(path) + "'");
 							continue;
 						}
 
@@ -666,7 +666,7 @@ bool AnimationGraphPlayer::_update_caches(AnimationPlayer *player) {
 	return true;
 }
 
-void AnimationGraphPlayer::_clear_caches() {
+void AnimationTree::_clear_caches() {
 
 	const NodePath *K = NULL;
 	while ((K = track_cache.next(K))) {
@@ -678,19 +678,20 @@ void AnimationGraphPlayer::_clear_caches() {
 	cache_valid = false;
 }
 
-void AnimationGraphPlayer::_process_graph(float p_delta) {
+void AnimationTree::_process_graph(float p_delta) {
 
 	//check all tracks, see if they need modification
+	root_motion_transform = Transform();
 
 	if (!root.is_valid()) {
-		ERR_PRINT("AnimationGraphPlayer: root AnimationNode is not set, disabling playback.");
+		ERR_PRINT("AnimationTree: root AnimationNode is not set, disabling playback.");
 		set_active(false);
 		cache_valid = false;
 		return;
 	}
 
 	if (!has_node(animation_player)) {
-		ERR_PRINT("AnimationGraphPlayer: no valid AnimationPlayer path set, disabling playback");
+		ERR_PRINT("AnimationTree: no valid AnimationPlayer path set, disabling playback");
 		set_active(false);
 		cache_valid = false;
 		return;
@@ -699,7 +700,7 @@ void AnimationGraphPlayer::_process_graph(float p_delta) {
 	AnimationPlayer *player = Object::cast_to<AnimationPlayer>(get_node(animation_player));
 
 	if (!player) {
-		ERR_PRINT("AnimationGraphPlayer: path points to a node not an AnimationPlayer, disabling playback");
+		ERR_PRINT("AnimationTree: path points to a node not an AnimationPlayer, disabling playback");
 		set_active(false);
 		cache_valid = false;
 		return;
@@ -712,6 +713,7 @@ void AnimationGraphPlayer::_process_graph(float p_delta) {
 	}
 
 	{ //setup
+
 
 		process_pass++;
 
@@ -757,6 +759,7 @@ void AnimationGraphPlayer::_process_graph(float p_delta) {
 
 			const AnimationNode::AnimationState &as = E->get();
 
+
 			Ref<Animation> a = as.animation;
 			float time = as.time;
 			float delta = as.delta;
@@ -769,6 +772,8 @@ void AnimationGraphPlayer::_process_graph(float p_delta) {
 				if (track->type != a->track_get_type(i)) {
 					continue; //may happen should not
 				}
+
+				track->root_motion = root_motion_track == path;
 
 				ERR_CONTINUE(!state.track_map.has(path));
 				int blend_idx = state.track_map[path];
@@ -786,18 +791,6 @@ void AnimationGraphPlayer::_process_graph(float p_delta) {
 
 						TrackCacheTransform *t = static_cast<TrackCacheTransform *>(track);
 
-						Vector3 loc;
-						Quat rot;
-						Vector3 scale;
-
-						Error err = a->transform_track_interpolate(i, time, &loc, &rot, &scale);
-						//ERR_CONTINUE(err!=OK); //used for testing, should be removed
-
-						scale -= Vector3(1.0, 1.0, 1.0); //helps make it work properly with Add nodes
-
-						if (err != OK)
-							continue;
-
 						if (t->process_pass != process_pass) {
 
 							t->process_pass = process_pass;
@@ -806,9 +799,71 @@ void AnimationGraphPlayer::_process_graph(float p_delta) {
 							t->scale = Vector3();
 						}
 
-						t->loc = t->loc.linear_interpolate(loc, blend);
-						t->rot = t->rot.slerp(rot, blend);
-						t->scale = t->scale.linear_interpolate(scale, blend);
+						if (track->root_motion) {
+
+							float prev_time = time - delta;
+							if (prev_time <0) {
+								if (!a->has_loop()) {
+									prev_time=0;
+								} else {
+									prev_time = a->get_length() + prev_time;
+								}
+							}
+
+							Vector3 loc[2];
+							Quat rot[2];
+							Vector3 scale[2];
+
+							if (prev_time > time) {
+
+								Error err = a->transform_track_interpolate(i, prev_time, &loc[0], &rot[0], &scale[0]);
+								if (err != OK) {
+									continue;
+								}
+
+								a->transform_track_interpolate(i, a->get_length(), &loc[1], &rot[1], &scale[1]);
+
+								t->loc += (loc[1] - loc[0]) * blend;
+								t->scale += (scale[1] - scale[0]) * blend;
+								Quat q = Quat().slerp(rot[0].normalized().inverse() * rot[1].normalized(),blend).normalized();
+								t->rot = (t->rot * q).normalized();
+
+								prev_time = 0;
+							}
+
+							Error err = a->transform_track_interpolate(i, prev_time, &loc[0], &rot[0], &scale[0]);
+							if (err != OK) {
+								continue;
+							}
+
+							a->transform_track_interpolate(i, time, &loc[1], &rot[1], &scale[1]);
+
+							t->loc += (loc[1] - loc[0]) * blend;
+							t->scale += (scale[1] - scale[0]) * blend;
+							Quat q = Quat().slerp(rot[0].normalized().inverse() * rot[1].normalized(),blend).normalized();
+							t->rot = (t->rot * q).normalized();
+
+							prev_time = 0;
+
+
+
+						} else {
+							Vector3 loc;
+							Quat rot;
+							Vector3 scale;
+
+							Error err = a->transform_track_interpolate(i, time, &loc, &rot, &scale);
+							//ERR_CONTINUE(err!=OK); //used for testing, should be removed
+
+							scale -= Vector3(1.0, 1.0, 1.0); //helps make it work properly with Add nodes
+
+							if (err != OK)
+								continue;
+
+							t->loc = t->loc.linear_interpolate(loc, blend);
+							t->rot = t->rot.slerp(rot, blend);
+							t->scale = t->scale.linear_interpolate(scale, blend);
+						}
 
 					} break;
 					case Animation::TYPE_VALUE: {
@@ -1059,11 +1114,18 @@ void AnimationGraphPlayer::_process_graph(float p_delta) {
 					Transform xform;
 					xform.origin = t->loc;
 
-					t->scale += Vector3(1.0, 1.0, 1.0); //helps make it work properly with Add nodes
+					t->scale += Vector3(1.0, 1.0, 1.0); //helps make it work properly with Add nodes and root motion
 
 					xform.basis.set_quat_scale(t->rot, t->scale);
 
-					if (t->skeleton && t->bone_idx >= 0) {
+					if (t->root_motion) {
+
+						root_motion_transform = xform;
+
+						if (t->skeleton && t->bone_idx >= 0) {
+							root_motion_transform = (t->skeleton->get_bone_rest(t->bone_idx) * root_motion_transform) *t->skeleton->get_bone_rest(t->bone_idx).affine_inverse();
+						}
+					} else 	if (t->skeleton && t->bone_idx >= 0) {
 
 						t->skeleton->set_bone_pose(t->bone_idx, xform);
 
@@ -1093,7 +1155,7 @@ void AnimationGraphPlayer::_process_graph(float p_delta) {
 	}
 }
 
-void AnimationGraphPlayer::_notification(int p_what) {
+void AnimationTree::_notification(int p_what) {
 
 	if (active && p_what == NOTIFICATION_INTERNAL_PHYSICS_PROCESS && process_mode == ANIMATION_PROCESS_PHYSICS) {
 		_process_graph(get_physics_process_delta_time());
@@ -1108,29 +1170,29 @@ void AnimationGraphPlayer::_notification(int p_what) {
 	}
 }
 
-void AnimationGraphPlayer::set_animation_player(const NodePath &p_player) {
+void AnimationTree::set_animation_player(const NodePath &p_player) {
 	animation_player = p_player;
 	update_configuration_warning();
 }
 
-NodePath AnimationGraphPlayer::get_animation_player() const {
+NodePath AnimationTree::get_animation_player() const {
 	return animation_player;
 }
 
-bool AnimationGraphPlayer::is_state_invalid() const {
+bool AnimationTree::is_state_invalid() const {
 
 	return !state.valid;
 }
-String AnimationGraphPlayer::get_invalid_state_reason() const {
+String AnimationTree::get_invalid_state_reason() const {
 
 	return state.invalid_reasons;
 }
 
-uint64_t AnimationGraphPlayer::get_last_process_pass() const {
+uint64_t AnimationTree::get_last_process_pass() const {
 	return process_pass;
 }
 
-String AnimationGraphPlayer::get_configuration_warning() const {
+String AnimationTree::get_configuration_warning() const {
 
 	String warning = Node::get_configuration_warning();
 
@@ -1174,28 +1236,48 @@ String AnimationGraphPlayer::get_configuration_warning() const {
 	return warning;
 }
 
-void AnimationGraphPlayer::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_active", "active"), &AnimationGraphPlayer::set_active);
-	ClassDB::bind_method(D_METHOD("is_active"), &AnimationGraphPlayer::is_active);
+void AnimationTree::set_root_motion_track(const NodePath& p_track) {
+	root_motion_track=p_track;
+}
 
-	ClassDB::bind_method(D_METHOD("set_graph_root", "root"), &AnimationGraphPlayer::set_graph_root);
-	ClassDB::bind_method(D_METHOD("get_graph_root"), &AnimationGraphPlayer::get_graph_root);
+NodePath AnimationTree::get_root_motion_track() const {
+	return root_motion_track;
+}
 
-	ClassDB::bind_method(D_METHOD("set_process_mode", "mode"), &AnimationGraphPlayer::set_process_mode);
-	ClassDB::bind_method(D_METHOD("get_process_mode"), &AnimationGraphPlayer::get_process_mode);
 
-	ClassDB::bind_method(D_METHOD("set_animation_player", "root"), &AnimationGraphPlayer::set_animation_player);
-	ClassDB::bind_method(D_METHOD("get_animation_player"), &AnimationGraphPlayer::get_animation_player);
+Transform AnimationTree::get_root_motion_transform() const {
+	return root_motion_transform;
+}
 
-	ClassDB::bind_method(D_METHOD("_node_removed"), &AnimationGraphPlayer::_node_removed);
+void AnimationTree::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_active", "active"), &AnimationTree::set_active);
+	ClassDB::bind_method(D_METHOD("is_active"), &AnimationTree::is_active);
+
+	ClassDB::bind_method(D_METHOD("set_graph_root", "root"), &AnimationTree::set_graph_root);
+	ClassDB::bind_method(D_METHOD("get_graph_root"), &AnimationTree::get_graph_root);
+
+	ClassDB::bind_method(D_METHOD("set_process_mode", "mode"), &AnimationTree::set_process_mode);
+	ClassDB::bind_method(D_METHOD("get_process_mode"), &AnimationTree::get_process_mode);
+
+	ClassDB::bind_method(D_METHOD("set_animation_player", "root"), &AnimationTree::set_animation_player);
+	ClassDB::bind_method(D_METHOD("get_animation_player"), &AnimationTree::get_animation_player);
+
+	ClassDB::bind_method(D_METHOD("set_root_motion_track", "path"), &AnimationTree::set_root_motion_track);
+	ClassDB::bind_method(D_METHOD("get_root_motion_track"), &AnimationTree::get_root_motion_track);
+
+	ClassDB::bind_method(D_METHOD("_node_removed"), &AnimationTree::_node_removed);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "graph_root", PROPERTY_HINT_RESOURCE_TYPE, "AnimationRootNode", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_DO_NOT_SHARE_ON_DUPLICATE), "set_graph_root", "get_graph_root");
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "anim_player"), "set_animation_player", "get_animation_player");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "active"), "set_active", "is_active");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "process_mode", PROPERTY_HINT_ENUM, "Physics,Idle"), "set_process_mode", "get_process_mode");
+	ADD_GROUP("Root Motion","root_motion_");
+	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "root_motion_track"),"set_root_motion_track", "get_root_motion_track");
+
+
 }
 
-AnimationGraphPlayer::AnimationGraphPlayer() {
+AnimationTree::AnimationTree() {
 
 	process_mode = ANIMATION_PROCESS_IDLE;
 	active = false;
@@ -1204,7 +1286,7 @@ AnimationGraphPlayer::AnimationGraphPlayer() {
 	started = true;
 }
 
-AnimationGraphPlayer::~AnimationGraphPlayer() {
+AnimationTree::~AnimationTree() {
 	if (root.is_valid()) {
 		root->player = NULL;
 	}

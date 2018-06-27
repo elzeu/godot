@@ -66,9 +66,11 @@
 #include "editor/import/resource_importer_scene.h"
 #include "editor/import/resource_importer_texture.h"
 #include "editor/import/resource_importer_wav.h"
-#include "editor/plugins/animation_blend_space_editor.h"
+#include "editor/plugins/animation_blend_space_1d_editor.h"
+#include "editor/plugins/animation_blend_space_2d_editor.h"
 #include "editor/plugins/animation_blend_tree_editor_plugin.h"
 #include "editor/plugins/animation_player_editor_plugin.h"
+#include "editor/plugins/animation_state_machine_editor.h"
 #include "editor/plugins/animation_tree_editor_plugin.h"
 #include "editor/plugins/asset_library_editor_plugin.h"
 #include "editor/plugins/baked_lightmap_editor_plugin.h"
@@ -97,6 +99,7 @@
 #include "editor/plugins/physical_bone_plugin.h"
 #include "editor/plugins/polygon_2d_editor_plugin.h"
 #include "editor/plugins/resource_preloader_editor_plugin.h"
+#include "editor/plugins/root_motion_editor_plugin.h"
 #include "editor/plugins/script_editor_plugin.h"
 #include "editor/plugins/script_text_editor.h"
 #include "editor/plugins/shader_editor_plugin.h"
@@ -4633,6 +4636,10 @@ EditorNode::EditorNode() {
 		Ref<EditorInspectorDefaultPlugin> eidp;
 		eidp.instance();
 		EditorInspector::add_inspector_plugin(eidp);
+
+		Ref<EditorInspectorRootMotionPlugin> rmp;
+		rmp.instance();
+		EditorInspector::add_inspector_plugin(rmp);
 	}
 
 	_pvrtc_register_compressors();
@@ -4658,9 +4665,7 @@ EditorNode::EditorNode() {
 
 	GLOBAL_DEF("editor/main_run_args", "");
 
-	ClassDB::set_class_enabled("CollisionShape", true);
-	ClassDB::set_class_enabled("CollisionShape2D", true);
-	ClassDB::set_class_enabled("CollisionPolygon2D", true);
+	ClassDB::set_class_enabled("RootMotionView", true);
 
 	//defs here, use EDITOR_GET in logic
 	EDITOR_DEF("interface/scene_tabs/always_show_close_button", false);
@@ -5400,7 +5405,9 @@ EditorNode::EditorNode() {
 	// FIXME: Disabled for Godot 3.0 as made incompatible, it needs to be ported to the new API.
 	//add_editor_plugin(memnew(ShaderGraphEditorPlugin(this)));
 	add_editor_plugin(memnew(AnimationNodeBlendTreeEditorPlugin(this)));
-	add_editor_plugin(memnew(AnimationNodeBlendSpaceEditorPlugin(this)));
+	add_editor_plugin(memnew(AnimationNodeBlendSpace1DEditorPlugin(this)));
+	add_editor_plugin(memnew(AnimationNodeBlendSpace2DEditorPlugin(this)));
+	add_editor_plugin(memnew(AnimationNodeStateMachineEditorPlugin(this)));
 
 	add_editor_plugin(memnew(CameraEditorPlugin(this)));
 	add_editor_plugin(memnew(ThemeEditorPlugin(this)));
