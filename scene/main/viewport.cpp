@@ -626,7 +626,7 @@ Rect2 Viewport::get_visible_rect() const {
 
 	if (size == Size2()) {
 
-		r = Rect2(Point2(), Size2(OS::get_singleton()->get_video_mode().width, OS::get_singleton()->get_video_mode().height));
+		r = Rect2(Point2(), Size2(OS::get_singleton()->get_window_size().width, OS::get_singleton()->get_window_size().height));
 	} else {
 
 		r = Rect2(Point2(), size);
@@ -1404,6 +1404,8 @@ void Viewport::_gui_call_input(Control *p_control, const Ref<InputEvent> &p_inpu
 									 mb->get_button_index() == BUTTON_WHEEL_UP ||
 									 mb->get_button_index() == BUTTON_WHEEL_LEFT ||
 									 mb->get_button_index() == BUTTON_WHEEL_RIGHT));
+	Ref<InputEventPanGesture> pn = p_input;
+	cant_stop_me_now = pn.is_valid() || cant_stop_me_now;
 
 	bool ismouse = ev.is_valid() || Object::cast_to<InputEventMouseMotion>(*p_input) != NULL;
 
