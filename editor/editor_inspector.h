@@ -55,6 +55,9 @@ private:
 	bool draw_red;
 	bool keying;
 
+	Rect2 right_child_rect;
+	Rect2 bottom_child_rect;
+
 	Rect2 keying_rect;
 	bool keying_hover;
 	Rect2 revert_rect;
@@ -75,6 +78,8 @@ private:
 	bool selectable;
 	bool selected;
 	int selected_focusable;
+
+	float split_ratio;
 
 	Vector<Control *> focusables;
 	Control *label_reference;
@@ -134,6 +139,9 @@ public:
 	void set_selectable(bool p_selectable);
 	bool is_selectable() const;
 
+	void set_name_split_ratio(float p_ratio);
+	float get_name_split_ratio() const;
+
 	void set_object_and_property(Object *p_object, const StringName &p_property);
 	EditorProperty();
 };
@@ -189,8 +197,11 @@ class EditorInspectorSection : public Container {
 	String section;
 	Object *object;
 	VBoxContainer *vbox;
+	bool vbox_added; //optimization
 	Color bg_color;
 	bool foldable;
+
+	void _test_unfold();
 
 protected:
 	void _notification(int p_what);
@@ -208,6 +219,7 @@ public:
 	Object *get_edited_object();
 
 	EditorInspectorSection();
+	~EditorInspectorSection();
 };
 
 class EditorInspector : public ScrollContainer {
@@ -244,15 +256,19 @@ class EditorInspector : public ScrollContainer {
 	bool update_all_pending;
 	bool read_only;
 	bool keying;
+	bool use_sub_inspector_bg;
 
 	float refresh_countdown;
 	bool update_tree_pending;
 	StringName _prop_edited;
 	StringName property_selected;
 	int property_focusable;
+	int update_scroll_request;
 
 	Map<StringName, Map<StringName, String> > descr_cache;
 	Map<StringName, String> class_descr_cache;
+
+	Map<ObjectID, int> scroll_cache;
 
 	void _edit_set(const String &p_name, const Variant &p_value, bool p_refresh_all, const String &p_changed_field);
 
@@ -276,6 +292,8 @@ class EditorInspector : public ScrollContainer {
 	void _filter_changed(const String &p_text);
 	void _parse_added_editors(VBoxContainer *current_vbox, Ref<EditorInspectorPlugin> ped);
 
+	void _vscroll_changed(double);
+
 protected:
 	static void _bind_methods();
 	void _notification(int p_what);
@@ -284,6 +302,8 @@ public:
 	static void add_inspector_plugin(const Ref<EditorInspectorPlugin> &p_plugin);
 	static void remove_inspector_plugin(const Ref<EditorInspectorPlugin> &p_plugin);
 	static void cleanup_plugins();
+
+	static EditorProperty *instantiate_property_editor(Object *p_object, Variant::Type p_type, const String &p_path, PropertyHint p_hint, const String &p_hint_text, int p_usage);
 
 	void set_undo_redo(UndoRedo *p_undo_redo);
 
@@ -322,6 +342,8 @@ public:
 
 	void set_scroll_offset(int p_offset);
 	int get_scroll_offset() const;
+
+	void set_use_sub_inspector_bg(bool p_enable);
 
 	EditorInspector();
 };

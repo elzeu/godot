@@ -164,7 +164,6 @@ private:
 		SETTINGS_UPDATE_ALWAYS,
 		SETTINGS_UPDATE_CHANGES,
 		SETTINGS_UPDATE_SPINNER_HIDE,
-		SETTINGS_EXPORT_PREFERENCES,
 		SETTINGS_PREFERENCES,
 		SETTINGS_LAYOUT_SAVE,
 		SETTINGS_LAYOUT_DELETE,
@@ -377,7 +376,11 @@ private:
 
 	PanelContainer *bottom_panel;
 	HBoxContainer *bottom_panel_hb;
+	HBoxContainer *bottom_panel_hb_editors;
 	VBoxContainer *bottom_panel_vb;
+	ToolButton *bottom_panel_raise;
+
+	void _bottom_panel_raise_toggled(bool);
 
 	EditorInterface *editor_interface;
 

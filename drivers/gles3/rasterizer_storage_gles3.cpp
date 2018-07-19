@@ -1328,6 +1328,13 @@ void RasterizerStorageGLES3::texture_set_proxy(RID p_texture, RID p_proxy) {
 	}
 }
 
+void RasterizerStorageGLES3::texture_set_force_redraw_if_visible(RID p_texture, bool p_enable) {
+
+	Texture *texture = texture_owner.get(p_texture);
+	ERR_FAIL_COND(!texture);
+	texture->redraw_if_visible = p_enable;
+}
+
 RID RasterizerStorageGLES3::sky_create() {
 
 	Sky *sky = memnew(Sky);
@@ -3862,7 +3869,7 @@ void RasterizerStorageGLES3::multimesh_allocate(RID p_multimesh, int p_instances
 
 		multimesh->data.resize(format_floats * p_instances);
 
-		for (int i = 0; i < p_instances; i += format_floats) {
+		for (int i = 0; i < p_instances * format_floats; i += format_floats) {
 
 			int color_from = 0;
 			int custom_data_from = 0;

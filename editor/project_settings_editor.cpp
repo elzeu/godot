@@ -394,6 +394,7 @@ void ProjectSettingsEditor::_show_last_added(const Ref<InputEvent> &p_event, con
 		while (child) {
 			Variant input = child->get_meta("__input");
 			if (p_event == input) {
+				r->set_collapsed(false);
 				child->select(0);
 				found = true;
 				break;
@@ -452,10 +453,10 @@ void ProjectSettingsEditor::_add_item(int p_item, Ref<InputEvent> p_exiting_even
 			device_index->add_item(TTR("Middle Button"));
 			device_index->add_item(TTR("Wheel Up Button"));
 			device_index->add_item(TTR("Wheel Down Button"));
-			device_index->add_item(TTR("Button 6"));
-			device_index->add_item(TTR("Button 7"));
-			device_index->add_item(TTR("Button 8"));
-			device_index->add_item(TTR("Button 9"));
+			device_index->add_item(TTR("Wheel Left Button"));
+			device_index->add_item(TTR("Wheel Right Button"));
+			device_index->add_item(TTR("X Button 1"));
+			device_index->add_item(TTR("X Button 2"));
 			device_input->popup_centered_minsize(Size2(350, 95) * EDSCALE);
 
 			Ref<InputEventMouseButton> mb = p_exiting_event;
@@ -654,6 +655,14 @@ void ProjectSettingsEditor::_update_actions() {
 	if (setting)
 		return;
 
+	Map<String, bool> collapsed;
+
+	if (input_editor->get_root() && input_editor->get_root()->get_children()) {
+		for (TreeItem *item = input_editor->get_root()->get_children(); item; item = item->get_next()) {
+			collapsed[item->get_text(0)] = item->is_collapsed();
+		}
+	}
+
 	input_editor->clear();
 	TreeItem *root = input_editor->create_item();
 	input_editor->set_hide_root(true);
@@ -677,6 +686,8 @@ void ProjectSettingsEditor::_update_actions() {
 		TreeItem *item = input_editor->create_item(root);
 		item->set_text(0, name);
 		item->set_custom_bg_color(0, get_color("prop_subsection", "Editor"));
+		if (collapsed.has(name))
+			item->set_collapsed(collapsed[name]);
 
 		item->set_editable(1, true);
 		item->set_cell_mode(1, TreeItem::CELL_MODE_RANGE);
