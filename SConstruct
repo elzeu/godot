@@ -145,6 +145,7 @@ opts.Add(EnumVariable('bits', "Target platform bits", 'default', ('default', '32
 opts.Add('p', "Platform (alias for 'platform')", '')
 opts.Add('platform', "Target platform (%s)" % ('|'.join(platform_list), ), '')
 opts.Add(EnumVariable('target', "Compilation target", 'debug', ('debug', 'release_debug', 'release')))
+opts.Add(EnumVariable('optimize', "Optimization type", 'speed', ('speed', 'size')))
 opts.Add(BoolVariable('tools', "Build the tools (a.k.a. the Godot editor)", True))
 opts.Add(BoolVariable('use_lto', 'Use link-time optimization', False))
 
@@ -416,11 +417,19 @@ if selected_platform in platform_list:
     if env['tools']:
         env.Append(CPPDEFINES=['TOOLS_ENABLED'])
     if env['disable_3d']:
-        env.Append(CPPDEFINES=['_3D_DISABLED'])
+        if env['tools']:
+            print("Build option 'disable_3d=yes' cannot be used with 'tools=yes' (editor), only with 'tools=no' (export template).")
+            sys.exit(255)
+        else:
+            env.Append(CPPDEFINES=['_3D_DISABLED'])
     if env['gdscript']:
         env.Append(CPPDEFINES=['GDSCRIPT_ENABLED'])
     if env['disable_advanced_gui']:
-        env.Append(CPPDEFINES=['ADVANCED_GUI_DISABLED'])
+        if env['tools']:
+            print("Build option 'disable_advanced_gui=yes' cannot be used with 'tools=yes' (editor), only with 'tools=no' (export template).")
+            sys.exit(255)
+        else:
+            env.Append(CPPDEFINES=['ADVANCED_GUI_DISABLED'])
     if env['minizip']:
         env.Append(CPPDEFINES=['MINIZIP_ENABLED'])
     if env['xml']:
