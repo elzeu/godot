@@ -100,8 +100,6 @@
 #define C_METHOD_MONOSTR_FROM_GODOT C_NS_MONOMARSHAL "::mono_string_from_godot"
 #define C_METHOD_MONOARRAY_TO(m_type) C_NS_MONOMARSHAL "::mono_array_to_" #m_type
 #define C_METHOD_MONOARRAY_FROM(m_type) C_NS_MONOMARSHAL "::" #m_type "_to_mono_array"
-#define C_METHOD_MANAGED_TO_DICT C_NS_MONOMARSHAL "::mono_object_to_Dictionary"
-#define C_METHOD_MANAGED_FROM_DICT C_NS_MONOMARSHAL "::Dictionary_to_mono_object"
 
 #define BINDINGS_GENERATOR_VERSION UINT32_C(2)
 
@@ -514,6 +512,15 @@ Error BindingsGenerator::generate_cs_core_project(const String &p_output_dir, bo
 		data.resize(file_data.uncompressed_size);
 		Compression::decompress(data.ptrw(), file_data.uncompressed_size, file_data.data, file_data.compressed_size, Compression::MODE_DEFLATE);
 
+		String output_dir = output_file.get_base_dir();
+
+		if (!DirAccess::exists(output_dir)) {
+			DirAccessRef da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
+			ERR_FAIL_COND_V(!da, ERR_CANT_CREATE);
+			Error err = da->make_dir_recursive(ProjectSettings::get_singleton()->globalize_path(output_dir));
+			ERR_FAIL_COND_V(err != OK, ERR_CANT_CREATE);
+		}
+
 		FileAccessRef file = FileAccess::open(output_file, FileAccess::WRITE);
 		ERR_FAIL_COND_V(!file, ERR_FILE_CANT_WRITE);
 		file->store_buffer(data.ptr(), data.size());
@@ -526,7 +533,6 @@ Error BindingsGenerator::generate_cs_core_project(const String &p_output_dir, bo
 
 	cs_icalls_content.push_back("using System;\n"
 								"using System.Runtime.CompilerServices;\n"
-								"using System.Collections.Generic;\n"
 								"\n");
 	cs_icalls_content.push_back("namespace " BINDINGS_NAMESPACE "\n" OPEN_BLOCK);
 	cs_icalls_content.push_back(INDENT1 "internal static class " BINDINGS_CLASS_NATIVECALLS "\n" INDENT1 OPEN_BLOCK);
@@ -631,7 +637,6 @@ Error BindingsGenerator::generate_cs_editor_project(const String &p_output_dir, 
 
 	cs_icalls_content.push_back("using System;\n"
 								"using System.Runtime.CompilerServices;\n"
-								"using System.Collections.Generic;\n"
 								"\n");
 	cs_icalls_content.push_back("namespace " BINDINGS_NAMESPACE "\n" OPEN_BLOCK);
 	cs_icalls_content.push_back(INDENT1 "internal static class " BINDINGS_CLASS_NATIVECALLS_EDITOR "\n" INDENT1 OPEN_BLOCK);
@@ -704,10 +709,8 @@ Error BindingsGenerator::_generate_cs_type(const TypeInterface &itype, const Str
 	List<String> output;
 
 	output.push_back("using System;\n"); // IntPtr
-
-	if (itype.requires_collections)
-		output.push_back("using System.Collections.Generic;\n"); // Dictionary
-
+	output.push_back("\n#pragma warning disable CS1591 // Disable warning: "
+					 "'Missing XML comment for publicly visible type or member'\n");
 	output.push_back("\nnamespace " BINDINGS_NAMESPACE "\n" OPEN_BLOCK);
 
 	const DocData::ClassDoc *class_doc = itype.class_doc;
@@ -730,8 +733,15 @@ Error BindingsGenerator::_generate_cs_type(const TypeInterface &itype, const Str
 	}
 
 	output.push_back(INDENT1 "public ");
-	bool is_abstract = itype.is_object_type && !ClassDB::can_instance(itype.name) && ClassDB::is_class_enabled(itype.name); // can_instance returns true if there's a constructor and the class is not 'disabled'
-	output.push_back(itype.is_singleton ? "static class " : (is_abstract ? "abstract class " : "class "));
+	if (itype.is_object_type) {
+		if (itype.is_singleton) {
+			output.push_back("static partial class ");
+		} else {
+			output.push_back(itype.is_instantiable ? "partial class " : "abstract partial class ");
+		}
+	} else {
+		output.push_back("partial class ");
+	}
 	output.push_back(itype.proxy_name);
 
 	if (itype.is_singleton) {
@@ -1027,7 +1037,10 @@ Error BindingsGenerator::_generate_cs_type(const TypeInterface &itype, const Str
 			custom_icalls.push_back(ctor_icall);
 	}
 
-	output.push_back(INDENT1 CLOSE_BLOCK CLOSE_BLOCK);
+	output.push_back(INDENT1 CLOSE_BLOCK /* class */
+					CLOSE_BLOCK /* namespace */);
+
+	output.push_back("\n#pragma warning restore CS1591\n");
 
 	return _save_file(p_output_file, output);
 }
@@ -1338,7 +1351,6 @@ Error BindingsGenerator::_generate_cs_method(const BindingsGenerator::TypeInterf
 		} else if (return_type->cs_out.empty()) {
 			p_output.push_back("return " + im_call + ";\n");
 		} else {
-			p_output.push_back(INDENT3);
 			p_output.push_back(sformat(return_type->cs_out, im_call, return_type->cs_type, return_type->im_type_out));
 			p_output.push_back("\n");
 		}
@@ -1653,7 +1665,7 @@ Error BindingsGenerator::_generate_glue_method(const BindingsGenerator::TypeInte
 								   "\t\tvarargs.set(i, GDMonoMarshal::mono_object_to_variant(elem));\n"
 								   "\t\t" C_LOCAL_PTRCALL_ARGS ".set(");
 				p_output.push_back(real_argc_str);
-				p_output.push_back(" + i, &varargs[i]);\n\t" CLOSE_BLOCK);
+				p_output.push_back(" + i, &varargs.write[i]);\n\t" CLOSE_BLOCK);
 			} else {
 				p_output.push_back(c_in_statements);
 				p_output.push_back("\tconst void* " C_LOCAL_PTRCALL_ARGS "[");
@@ -1916,9 +1928,6 @@ void BindingsGenerator::_populate_object_type_interfaces() {
 				imethod.return_type.cname = Variant::get_type_name(return_info.type);
 			}
 
-			if (!itype.requires_collections && imethod.return_type.cname == name_cache.type_Dictionary)
-				itype.requires_collections = true;
-
 			for (int i = 0; i < argc; i++) {
 				PropertyInfo arginfo = method_info.arguments[i];
 
@@ -1939,9 +1948,6 @@ void BindingsGenerator::_populate_object_type_interfaces() {
 				}
 
 				iarg.name = escape_csharp_keyword(snake_to_camel_case(iarg.name));
-
-				if (!itype.requires_collections && iarg.type.cname == name_cache.type_Dictionary)
-					itype.requires_collections = true;
 
 				if (m && m->has_default_argument(i)) {
 					_default_argument_from_variant(m->get_default_argument(i), iarg);
@@ -2344,7 +2350,6 @@ void BindingsGenerator::_populate_builtin_type_interfaces() {
 
 #define INSERT_ARRAY(m_type, m_proxy_t) INSERT_ARRAY_FULL(m_type, m_type, m_proxy_t)
 
-	INSERT_ARRAY(Array, object);
 	INSERT_ARRAY(PoolIntArray, int);
 	INSERT_ARRAY_FULL(PoolByteArray, PoolByteArray, byte);
 
@@ -2362,20 +2367,36 @@ void BindingsGenerator::_populate_builtin_type_interfaces() {
 
 #undef INSERT_ARRAY
 
+	// Array
+	itype = TypeInterface();
+	itype.name = "Array";
+	itype.cname = itype.name;
+	itype.proxy_name = itype.name;
+	itype.c_out = "\treturn memnew(Array(%1));\n";
+	itype.c_type = itype.name;
+	itype.c_type_in = itype.c_type + "*";
+	itype.c_type_out = itype.c_type + "*";
+	itype.cs_type = BINDINGS_NAMESPACE_COLLECTIONS "." + itype.proxy_name;
+	itype.cs_in = "%0." CS_SMETHOD_GETINSTANCE "()";
+	itype.cs_out = "return new " + itype.cs_type + "(%0);";
+	itype.im_type_in = "IntPtr";
+	itype.im_type_out = "IntPtr";
+	builtin_types.insert(itype.cname, itype);
+
 	// Dictionary
 	itype = TypeInterface();
 	itype.name = "Dictionary";
 	itype.cname = itype.name;
-	itype.proxy_name = "Dictionary<object, object>";
-	itype.c_in = "\t%0 %1_in = " C_METHOD_MANAGED_TO_DICT "(%1);\n";
-	itype.c_out = "\treturn " C_METHOD_MANAGED_FROM_DICT "(%1);\n";
-	itype.c_arg_in = "&%s_in";
+	itype.proxy_name = itype.name;
+	itype.c_out = "\treturn memnew(Dictionary(%1));\n";
 	itype.c_type = itype.name;
-	itype.c_type_in = "MonoObject*";
-	itype.c_type_out = "MonoObject*";
-	itype.cs_type = itype.proxy_name;
-	itype.im_type_in = itype.proxy_name;
-	itype.im_type_out = itype.proxy_name;
+	itype.c_type_in = itype.c_type + "*";
+	itype.c_type_out = itype.c_type + "*";
+	itype.cs_type = BINDINGS_NAMESPACE_COLLECTIONS "." + itype.proxy_name;
+	itype.cs_in = "%0." CS_SMETHOD_GETINSTANCE "()";
+	itype.cs_out = "return new " + itype.cs_type + "(%0);";
+	itype.im_type_in = "IntPtr";
+	itype.im_type_out = "IntPtr";
 	builtin_types.insert(itype.cname, itype);
 
 	// void (fictitious type to represent the return type of methods that do not return anything)
@@ -2420,9 +2441,6 @@ void BindingsGenerator::_populate_builtin_type(TypeInterface &r_itype, Variant::
 			else
 				iarg.type.cname = Variant::get_type_name(pi.type);
 
-			if (!r_itype.requires_collections && iarg.type.cname == name_cache.type_Dictionary)
-				r_itype.requires_collections = true;
-
 			if ((mi.default_arguments.size() - mi.arguments.size() + i) >= 0)
 				_default_argument_from_variant(Variant::construct(pi.type, NULL, 0, cerror), iarg);
 
@@ -2435,9 +2453,6 @@ void BindingsGenerator::_populate_builtin_type(TypeInterface &r_itype, Variant::
 		} else {
 			imethod.return_type.cname = Variant::get_type_name(mi.return_val.type);
 		}
-
-		if (!r_itype.requires_collections && imethod.return_type.cname == name_cache.type_Dictionary)
-			r_itype.requires_collections = true;
 
 		if (r_itype.class_doc) {
 			for (int i = 0; i < r_itype.class_doc->methods.size(); i++) {

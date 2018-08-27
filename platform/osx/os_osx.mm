@@ -95,7 +95,7 @@ static void push_to_key_event_buffer(const OS_OSX::KeyEvent &p_event) {
 	if (OS_OSX::singleton->key_event_pos >= buffer.size()) {
 		buffer.resize(1 + OS_OSX::singleton->key_event_pos);
 	}
-	buffer[OS_OSX::singleton->key_event_pos++] = p_event;
+	buffer.write[OS_OSX::singleton->key_event_pos++] = p_event;
 }
 
 static int mouse_x = 0;
@@ -602,8 +602,8 @@ static void _mouseDownEvent(NSEvent *event, int index, int mask, bool pressed) {
 	mm->set_position(pos);
 	mm->set_global_position(pos);
 	Vector2 relativeMotion = Vector2();
-	relativeMotion.x = [event deltaX] * OS_OSX::singleton->_mouse_scale([[event window] backingScaleFactor]);
-	relativeMotion.y = [event deltaY] * OS_OSX::singleton->_mouse_scale([[event window] backingScaleFactor]);
+	relativeMotion.x = [event deltaX] * OS_OSX::singleton -> _mouse_scale([[event window] backingScaleFactor]);
+	relativeMotion.y = [event deltaY] * OS_OSX::singleton -> _mouse_scale([[event window] backingScaleFactor]);
 	mm->set_relative(relativeMotion);
 	get_key_modifier_state([event modifierFlags], mm);
 
@@ -1276,8 +1276,6 @@ Error OS_OSX::initialize(const VideoMode &p_desired, int p_video_driver, int p_a
 		ADD_ATTR2(NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core);
 	}
 
-	video_driver_index = p_video_driver;
-
 	ADD_ATTR2(NSOpenGLPFAColorSize, colorBits);
 
 	/*
@@ -1333,22 +1331,58 @@ Error OS_OSX::initialize(const VideoMode &p_desired, int p_video_driver, int p_a
 
 	/*** END OSX INITIALIZATION ***/
 
-	// only opengl support here...
+	bool gles3 = true;
 	if (p_video_driver == VIDEO_DRIVER_GLES2) {
-		RasterizerGLES2::register_config();
-		RasterizerGLES2::make_current();
-	} else {
-		RasterizerGLES3::register_config();
-		RasterizerGLES3::make_current();
+		gles3 = false;
 	}
+
+	bool editor = Engine::get_singleton()->is_editor_hint();
+	bool gl_initialization_error = false;
+
+	while (true) {
+		if (gles3) {
+			if (RasterizerGLES3::is_viable() == OK) {
+				RasterizerGLES3::register_config();
+				RasterizerGLES3::make_current();
+				break;
+			} else {
+				if (GLOBAL_GET("rendering/quality/driver/driver_fallback") == "Best" || editor) {
+					p_video_driver = VIDEO_DRIVER_GLES2;
+					gles3 = false;
+					continue;
+				} else {
+					gl_initialization_error = true;
+					break;
+				}
+			}
+		} else {
+			if (RasterizerGLES2::is_viable() == OK) {
+				RasterizerGLES2::register_config();
+				RasterizerGLES2::make_current();
+				break;
+			} else {
+				gl_initialization_error = true;
+				break;
+			}
+		}
+	}
+
+	if (gl_initialization_error) {
+		OS::get_singleton()->alert("Your video card driver does not support any of the supported OpenGL versions.\n"
+								   "Please update your drivers or if you have a very old or integrated GPU upgrade it.",
+				"Unable to initialize Video driver");
+		return ERR_UNAVAILABLE;
+	}
+
+	video_driver_index = p_video_driver;
 
 	visual_server = memnew(VisualServerRaster);
 	if (get_render_thread_mode() != RENDER_THREAD_UNSAFE) {
 
 		visual_server = memnew(VisualServerWrapMT(visual_server, get_render_thread_mode() == RENDER_SEPARATE_THREAD));
 	}
-	visual_server->init();
 
+	visual_server->init();
 	AudioDriverManager::initialize(p_audio_driver);
 
 	input = memnew(InputDefault);
@@ -1367,6 +1401,8 @@ Error OS_OSX::initialize(const VideoMode &p_desired, int p_video_driver, int p_a
 }
 
 void OS_OSX::finalize() {
+
+	midi_driver.close();
 
 	CFNotificationCenterRemoveObserver(CFNotificationCenterGetDistributedCenter(), NULL, kTISNotifySelectedKeyboardInputSourceChanged, NULL);
 	CGDisplayRemoveReconfigurationCallback(displays_arrangement_changed, NULL);
@@ -2403,7 +2439,7 @@ void OS_OSX::process_key_events() {
 	Ref<InputEventKey> k;
 	for (int i = 0; i < key_event_pos; i++) {
 
-		KeyEvent &ke = key_event_buffer[i];
+		const KeyEvent &ke = key_event_buffer[i];
 
 		if ((i == 0 && ke.scancode == 0) || (i > 0 && key_event_buffer[i - 1].scancode == 0)) {
 			k.instance();

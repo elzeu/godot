@@ -431,7 +431,6 @@ String VisualShader::generate_preview_shader(Type p_type, int p_node, int p_port
 	global_code += "\n\n";
 	String final_code = global_code;
 	final_code += code;
-	//print_line(final_code);
 	return final_code;
 }
 
@@ -914,7 +913,6 @@ void VisualShader::_update_shader() const {
 	String final_code = global_code;
 	final_code += code;
 	const_cast<VisualShader *>(this)->set_code(final_code);
-	//print_line(final_code);
 	for (int i = 0; i < default_tex_params.size(); i++) {
 		const_cast<VisualShader *>(this)->set_default_texture_param(default_tex_params[i].name, default_tex_params[i].param);
 	}
@@ -949,8 +947,8 @@ void VisualShader::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_node", "type", "node", "position", "id"), &VisualShader::add_node);
 	ClassDB::bind_method(D_METHOD("set_node_position", "type", "id", "position"), &VisualShader::set_node_position);
 
+	ClassDB::bind_method(D_METHOD("get_node", "type", "id"), &VisualShader::get_node);
 	ClassDB::bind_method(D_METHOD("get_node_position", "type", "id"), &VisualShader::get_node_position);
-	ClassDB::bind_method(D_METHOD("get_node", "type"), &VisualShader::get_node);
 
 	ClassDB::bind_method(D_METHOD("get_node_list", "type"), &VisualShader::get_node_list);
 	ClassDB::bind_method(D_METHOD("get_valid_node_id", "type"), &VisualShader::get_valid_node_id);

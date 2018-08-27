@@ -137,7 +137,6 @@ void VisualServerViewport::_draw_viewport(Viewport *p_viewport, ARVRInterface::E
 				}
 			}
 
-			//print_line("lights: "+itos(light_count));
 			canvas_map[Viewport::CanvasKey(E->key(), E->get().layer)] = &E->get();
 		}
 
@@ -194,8 +193,6 @@ void VisualServerViewport::_draw_viewport(Viewport *p_viewport, ARVRInterface::E
 
 			VisualServerCanvas::Canvas *canvas = static_cast<VisualServerCanvas::Canvas *>(E->get()->canvas);
 
-			//print_line("canvas "+itos(i)+" size: "+itos(I->get()->canvas->child_items.size()));
-			//print_line("GT "+p_viewport->global_transform+". CT: "+E->get()->transform);
 			Transform2D xform = p_viewport->global_transform * E->get()->transform;
 
 			RasterizerCanvas::Light *canvas_lights = NULL;
@@ -252,7 +249,9 @@ void VisualServerViewport::draw_viewports() {
 	// process all our active interfaces
 	ARVRServer::get_singleton()->_process();
 
-	clear_color = GLOBAL_GET("rendering/environment/default_clear_color");
+	if (Engine::get_singleton()->is_editor_hint()) {
+		clear_color = GLOBAL_GET("rendering/environment/default_clear_color");
+	}
 
 	//sort viewports
 	active_viewports.sort_custom<ViewportSort>();
@@ -658,6 +657,10 @@ bool VisualServerViewport::free(RID p_rid) {
 	}
 
 	return false;
+}
+
+void VisualServerViewport::set_default_clear_color(const Color &p_color) {
+	clear_color = p_color;
 }
 
 VisualServerViewport::VisualServerViewport() {

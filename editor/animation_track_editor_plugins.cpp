@@ -271,8 +271,8 @@ void AnimationTrackEditAudio::draw_key(int p_index, float p_pixels_sec, int p_x,
 			float min = preview->get_min(ofs, ofs_n) * 0.5 + 0.5;
 
 			int idx = i - from_x;
-			lines[idx * 2 + 0] = Vector2(i, rect.position.y + min * rect.size.y);
-			lines[idx * 2 + 1] = Vector2(i, rect.position.y + max * rect.size.y);
+			lines.write[idx * 2 + 0] = Vector2(i, rect.position.y + min * rect.size.y);
+			lines.write[idx * 2 + 1] = Vector2(i, rect.position.y + max * rect.size.y);
 		}
 
 		Vector<Color> color;
@@ -883,8 +883,8 @@ void AnimationTrackEditTypeAudio::draw_key(int p_index, float p_pixels_sec, int 
 		float min = preview->get_min(ofs, ofs_n) * 0.5 + 0.5;
 
 		int idx = i - from_x;
-		lines[idx * 2 + 0] = Vector2(i, rect.position.y + min * rect.size.y);
-		lines[idx * 2 + 1] = Vector2(i, rect.position.y + max * rect.size.y);
+		lines.write[idx * 2 + 0] = Vector2(i, rect.position.y + min * rect.size.y);
+		lines.write[idx * 2 + 1] = Vector2(i, rect.position.y + max * rect.size.y);
 	}
 
 	Vector<Color> color;
@@ -973,8 +973,6 @@ void AnimationTrackEditTypeAudio::drop_data(const Point2 &p_point, const Variant
 			while (get_animation()->track_find_key(get_track(), ofs, true) != -1) { //make sure insertion point is valid
 				ofs += 0.001;
 			}
-
-			print_line("inserting");
 
 			*get_block_animation_update_ptr() = true;
 			get_undo_redo()->create_action("Add Audio Track Clip");
@@ -1124,7 +1122,6 @@ Rect2 AnimationTrackEditTypeAnimation::get_key_rect(int p_index, float p_pixels_
 	}
 
 	String anim = get_animation()->animation_track_get_key_animation(get_track(), p_index);
-	print_line("anim " + anim + " has " + itos(ap->has_animation(anim)));
 
 	if (anim != "[stop]" && ap->has_animation(anim)) {
 

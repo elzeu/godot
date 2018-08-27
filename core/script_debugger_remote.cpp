@@ -82,17 +82,16 @@ Error ScriptDebuggerRemote::connect_to_host(const String &p_host, uint16_t p_por
 
 			const int ms = waits[i];
 			OS::get_singleton()->delay_usec(ms * 1000);
-			print_line("Remote Debugger: Connection failed with status: '" + String::num(tcp_client->get_status()) + "', retrying in " + String::num(ms) + " msec.");
+			ERR_PRINTS("Remote Debugger: Connection failed with status: '" + String::num(tcp_client->get_status()) + "', retrying in " + String::num(ms) + " msec.");
 		};
 	};
 
 	if (tcp_client->get_status() != StreamPeerTCP::STATUS_CONNECTED) {
 
-		print_line("Remote Debugger: Unable to connect");
+		ERR_PRINTS("Remote Debugger: Unable to connect.");
 		return FAILED;
 	};
 
-	//    print_line("Remote Debugger: Connection OK!");
 	packet_peer_stream->set_stream_peer(tcp_client);
 
 	return OK;
@@ -783,13 +782,13 @@ void ScriptDebuggerRemote::_send_profiling_data(bool p_for_frame) {
 
 	for (int i = 0; i < ScriptServer::get_language_count(); i++) {
 		if (p_for_frame)
-			ofs += ScriptServer::get_language(i)->profiling_get_frame_data(&profile_info[ofs], profile_info.size() - ofs);
+			ofs += ScriptServer::get_language(i)->profiling_get_frame_data(&profile_info.write[ofs], profile_info.size() - ofs);
 		else
-			ofs += ScriptServer::get_language(i)->profiling_get_accumulated_data(&profile_info[ofs], profile_info.size() - ofs);
+			ofs += ScriptServer::get_language(i)->profiling_get_accumulated_data(&profile_info.write[ofs], profile_info.size() - ofs);
 	}
 
 	for (int i = 0; i < ofs; i++) {
-		profile_info_ptrs[i] = &profile_info[i];
+		profile_info_ptrs.write[i] = &profile_info.write[i];
 	}
 
 	SortArray<ScriptLanguage::ProfilingInfo *, ProfileInfoSort> sa;
@@ -1054,7 +1053,7 @@ void ScriptDebuggerRemote::add_profiling_frame_data(const StringName &p_name, co
 	if (idx == -1) {
 		profile_frame_data.push_back(fd);
 	} else {
-		profile_frame_data[idx] = fd;
+		profile_frame_data.write[idx] = fd;
 	}
 }
 

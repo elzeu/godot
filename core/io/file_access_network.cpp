@@ -93,8 +93,6 @@ void FileAccessNetworkClient::_thread_func() {
 		DEBUG_TIME("sem_unlock");
 		//DEBUG_PRINT("semwait returned "+itos(werr));
 		DEBUG_PRINT("MUTEX LOCK " + itos(lockcount));
-		DEBUG_PRINT("POPO");
-		DEBUG_PRINT("PEPE");
 		lock_mutex();
 		DEBUG_PRINT("MUTEX PASS");
 
@@ -258,8 +256,8 @@ void FileAccessNetwork::_set_block(int p_offset, const Vector<uint8_t> &p_block)
 	}
 
 	buffer_mutex->lock();
-	pages[page].buffer = p_block;
-	pages[page].queued = false;
+	pages.write[page].buffer = p_block;
+	pages.write[page].queued = false;
 	buffer_mutex->unlock();
 
 	if (waiting_on_page == page) {
@@ -389,7 +387,7 @@ void FileAccessNetwork::_queue_page(int p_page) const {
 		br.offset = size_t(p_page) * page_size;
 		br.size = page_size;
 		nc->block_requests.push_back(br);
-		pages[p_page].queued = true;
+		pages.write[p_page].queued = true;
 		nc->blockrequest_mutex->unlock();
 		DEBUG_PRINT("QUEUE PAGE POST");
 		nc->sem->post();
@@ -433,12 +431,12 @@ int FileAccessNetwork::get_buffer(uint8_t *p_dst, int p_length) const {
 
 					_queue_page(page + j);
 				}
-				buff = pages[page].buffer.ptrw();
+				buff = pages.write[page].buffer.ptrw();
 				//queue pages
 				buffer_mutex->unlock();
 			}
 
-			buff = pages[page].buffer.ptrw();
+			buff = pages.write[page].buffer.ptrw();
 			last_page_buff = buff;
 			last_page = page;
 		}

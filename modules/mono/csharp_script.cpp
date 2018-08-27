@@ -523,7 +523,7 @@ Vector<ScriptLanguage::StackInfo> CSharpLanguage::stack_trace_get_info(MonoObjec
 	si.resize(frame_count);
 
 	for (int i = 0; i < frame_count; i++) {
-		StackInfo &sif = si[i];
+		StackInfo &sif = si.write[i];
 		MonoObject *frame = mono_array_get(frames, MonoObject *, i);
 
 		MonoString *file_name;
@@ -638,32 +638,40 @@ void CSharpLanguage::reload_tool_script(const Ref<Script> &p_script, bool p_soft
 #ifdef TOOLS_ENABLED
 void CSharpLanguage::reload_assemblies_if_needed(bool p_soft_reload) {
 
-	if (gdmono->is_runtime_initialized()) {
+	if (!gdmono->is_runtime_initialized())
+		return;
 
-		GDMonoAssembly *proj_assembly = gdmono->get_project_assembly();
+	GDMonoAssembly *proj_assembly = gdmono->get_project_assembly();
 
-		String name = ProjectSettings::get_singleton()->get("application/config/name");
-		if (name.empty()) {
-			name = "UnnamedProject";
-		}
+	String name = ProjectSettings::get_singleton()->get("application/config/name");
+	if (name.empty()) {
+		name = "UnnamedProject";
+	}
 
-		if (proj_assembly) {
-			String proj_asm_path = proj_assembly->get_path();
+	name += ".dll";
 
-			if (!FileAccess::exists(proj_assembly->get_path())) {
-				// Maybe it wasn't loaded from the default path, so check this as well
-				proj_asm_path = GodotSharpDirs::get_res_temp_assemblies_dir().plus_file(name);
-				if (!FileAccess::exists(proj_asm_path))
-					return; // No assembly to load
-			}
+	if (proj_assembly) {
+		String proj_asm_path = proj_assembly->get_path();
 
-			if (FileAccess::get_modified_time(proj_asm_path) <= proj_assembly->get_modified_time())
-				return; // Already up to date
-		} else {
-			if (!FileAccess::exists(GodotSharpDirs::get_res_temp_assemblies_dir().plus_file(name)))
+		if (!FileAccess::exists(proj_assembly->get_path())) {
+			// Maybe it wasn't loaded from the default path, so check this as well
+			proj_asm_path = GodotSharpDirs::get_res_temp_assemblies_dir().plus_file(name);
+			if (!FileAccess::exists(proj_asm_path))
 				return; // No assembly to load
 		}
+
+		if (FileAccess::get_modified_time(proj_asm_path) <= proj_assembly->get_modified_time())
+			return; // Already up to date
+	} else {
+		if (!FileAccess::exists(GodotSharpDirs::get_res_temp_assemblies_dir().plus_file(name)))
+			return; // No assembly to load
 	}
+
+	if (!gdmono->get_core_api_assembly() && gdmono->metadata_is_api_assembly_invalidated(APIAssembly::API_CORE))
+		return; // The core API assembly to load is invalidated
+
+	if (!gdmono->get_editor_api_assembly() && gdmono->metadata_is_api_assembly_invalidated(APIAssembly::API_EDITOR))
+		return; // The editor API assembly to load is invalidated
 
 #ifndef NO_THREADS
 	lock->lock();
@@ -728,6 +736,9 @@ void CSharpLanguage::reload_assemblies_if_needed(bool p_soft_reload) {
 					obj->get_script_instance()->get_property_state(state);
 					map[obj->get_instance_id()] = state;
 					obj->set_script(RefPtr());
+				} else {
+					// no instance found. Let's remove it so we don't loop forever
+					E->get()->placeholders.erase(E->get()->placeholders.front()->get());
 				}
 			}
 
@@ -739,8 +750,24 @@ void CSharpLanguage::reload_assemblies_if_needed(bool p_soft_reload) {
 		}
 	}
 
-	if (gdmono->reload_scripts_domain() != OK)
+	if (gdmono->reload_scripts_domain() != OK) {
+		// Failed to reload the scripts domain
+		// Make sure to add the scripts back to their owners before returning
+		for (Map<Ref<CSharpScript>, Map<ObjectID, List<Pair<StringName, Variant> > > >::Element *E = to_reload.front(); E; E = E->next()) {
+			Ref<CSharpScript> scr = E->key();
+			for (Map<ObjectID, List<Pair<StringName, Variant> > >::Element *F = E->get().front(); F; F = F->next()) {
+				Object *obj = ObjectDB::get_instance(F->key());
+				if (!obj)
+					continue;
+				obj->set_script(scr.get_ref_ptr());
+				// Save reload state for next time if not saved
+				if (!scr->pending_reload_state.has(obj->get_instance_id())) {
+					scr->pending_reload_state[obj->get_instance_id()] = F->get();
+				}
+			}
+		}
 		return;
+	}
 
 	for (Map<Ref<CSharpScript>, Map<ObjectID, List<Pair<StringName, Variant> > > >::Element *E = to_reload.front(); E; E = E->next()) {
 
@@ -768,6 +795,14 @@ void CSharpLanguage::reload_assemblies_if_needed(bool p_soft_reload) {
 					scr->pending_reload_state[obj->get_instance_id()] = F->get();
 				}
 				continue;
+			}
+
+			if (scr->valid && scr->is_tool() && obj->get_script_instance()->is_placeholder()) {
+				// Script instance was a placeholder, but now the script was built successfully and is a tool script.
+				// We have to replace the placeholder with an actual C# script instance.
+				scr->placeholders.erase(static_cast<PlaceHolderScriptInstance *>(obj->get_script_instance()));
+				ScriptInstance *script_instance = scr->instance_create(obj);
+				obj->set_script_instance(script_instance); // Not necessary as it's already done in instance_create, but just in case...
 			}
 
 			for (List<Pair<StringName, Variant> >::Element *G = F->get().front(); G; G = G->next()) {
@@ -976,6 +1011,69 @@ void CSharpLanguage::free_instance_binding_data(void *p_data) {
 #ifndef NO_THREADS
 	script_bind_lock->unlock();
 #endif
+}
+
+void CSharpLanguage::refcount_incremented_instance_binding(Object *p_object) {
+
+	Reference *ref_owner = Object::cast_to<Reference>(p_object);
+
+#ifdef DEBUG_ENABLED
+	CRASH_COND(!ref_owner);
+#endif
+
+	void *data = p_object->get_script_instance_binding(get_language_index());
+	if (!data)
+		return;
+	Ref<MonoGCHandle> &gchandle = ((Map<Object *, Ref<MonoGCHandle> >::Element *)data)->get();
+
+	if (ref_owner->reference_get_count() > 1 && gchandle->is_weak()) { // The managed side also holds a reference, hence 1 instead of 0
+		// The reference count was increased after the managed side was the only one referencing our owner.
+		// This means the owner is being referenced again by the unmanaged side,
+		// so the owner must hold the managed side alive again to avoid it from being GCed.
+
+		MonoObject *target = gchandle->get_target();
+		if (!target)
+			return; // Called after the managed side was collected, so nothing to do here
+
+		// Release the current weak handle and replace it with a strong handle.
+		uint32_t strong_gchandle = MonoGCHandle::make_strong_handle(target);
+		gchandle->release();
+		gchandle->set_handle(strong_gchandle, MonoGCHandle::STRONG_HANDLE);
+	}
+}
+
+bool CSharpLanguage::refcount_decremented_instance_binding(Object *p_object) {
+
+	Reference *ref_owner = Object::cast_to<Reference>(p_object);
+
+#ifdef DEBUG_ENABLED
+	CRASH_COND(!ref_owner);
+#endif
+
+	int refcount = ref_owner->reference_get_count();
+
+	void *data = p_object->get_script_instance_binding(get_language_index());
+	if (!data)
+		return refcount == 0;
+	Ref<MonoGCHandle> &gchandle = ((Map<Object *, Ref<MonoGCHandle> >::Element *)data)->get();
+
+	if (refcount == 1 && !gchandle->is_weak()) { // The managed side also holds a reference, hence 1 instead of 0
+		// If owner owner is no longer referenced by the unmanaged side,
+		// the managed instance takes responsibility of deleting the owner when GCed.
+
+		MonoObject *target = gchandle->get_target();
+		if (!target)
+			return refcount == 0; // Called after the managed side was collected, so nothing to do here
+
+		// Release the current strong handle and replace it with a weak handle.
+		uint32_t weak_gchandle = MonoGCHandle::make_weak_handle(target);
+		gchandle->release();
+		gchandle->set_handle(weak_gchandle, MonoGCHandle::WEAK_HANDLE);
+
+		return false;
+	}
+
+	return refcount == 0;
 }
 
 CSharpInstance *CSharpInstance::create_for_managed_type(Object *p_owner, CSharpScript *p_script, const Ref<MonoGCHandle> &p_gchandle) {
@@ -1268,11 +1366,13 @@ void CSharpInstance::mono_object_disposed() {
 
 void CSharpInstance::refcount_incremented() {
 
+#ifdef DEBUG_ENABLED
 	CRASH_COND(!base_ref);
+#endif
 
 	Reference *ref_owner = Object::cast_to<Reference>(owner);
 
-	if (ref_owner->reference_get_count() > 1) { // The managed side also holds a reference, hence 1 instead of 0
+	if (ref_owner->reference_get_count() > 1 && gchandle->is_weak()) { // The managed side also holds a reference, hence 1 instead of 0
 		// The reference count was increased after the managed side was the only one referencing our owner.
 		// This means the owner is being referenced again by the unmanaged side,
 		// so the owner must hold the managed side alive again to avoid it from being GCed.
@@ -1280,26 +1380,28 @@ void CSharpInstance::refcount_incremented() {
 		// Release the current weak handle and replace it with a strong handle.
 		uint32_t strong_gchandle = MonoGCHandle::make_strong_handle(gchandle->get_target());
 		gchandle->release();
-		gchandle->set_handle(strong_gchandle);
+		gchandle->set_handle(strong_gchandle, MonoGCHandle::STRONG_HANDLE);
 	}
 }
 
 bool CSharpInstance::refcount_decremented() {
 
+#ifdef DEBUG_ENABLED
 	CRASH_COND(!base_ref);
+#endif
 
 	Reference *ref_owner = Object::cast_to<Reference>(owner);
 
 	int refcount = ref_owner->reference_get_count();
 
-	if (refcount == 1) { // The managed side also holds a reference, hence 1 instead of 0
+	if (refcount == 1 && !gchandle->is_weak()) { // The managed side also holds a reference, hence 1 instead of 0
 		// If owner owner is no longer referenced by the unmanaged side,
 		// the managed instance takes responsibility of deleting the owner when GCed.
 
 		// Release the current strong handle and replace it with a weak handle.
 		uint32_t weak_gchandle = MonoGCHandle::make_weak_handle(gchandle->get_target());
 		gchandle->release();
-		gchandle->set_handle(weak_gchandle);
+		gchandle->set_handle(weak_gchandle, MonoGCHandle::WEAK_HANDLE);
 
 		return false;
 	}
@@ -1466,8 +1568,12 @@ void CSharpScript::_update_exports_values(Map<StringName, Variant> &values, List
 bool CSharpScript::_update_exports() {
 
 #ifdef TOOLS_ENABLED
-	if (!valid)
+	if (!valid) {
+		for (Set<PlaceHolderScriptInstance *>::Element *E = placeholders.front(); E; E = E->next()) {
+			E->get()->set_build_failed(true);
+		}
 		return false;
+	}
 
 	bool changed = false;
 
@@ -1569,6 +1675,7 @@ bool CSharpScript::_update_exports() {
 		_update_exports_values(values, propnames);
 
 		for (Set<PlaceHolderScriptInstance *>::Element *E = placeholders.front(); E; E = E->next()) {
+			E->get()->set_build_failed(false);
 			E->get()->update(propnames, values);
 		}
 	}
@@ -1609,7 +1716,7 @@ void CSharpScript::load_script_signals(GDMonoClass *p_class, GDMonoClass *p_nati
 
 bool CSharpScript::_get_signal(GDMonoClass *p_class, GDMonoClass *p_delegate, Vector<Argument> &params) {
 	if (p_delegate->has_attribute(CACHED_CLASS(SignalAttribute))) {
-		MonoType *raw_type = GDMonoClass::get_raw_type(p_delegate);
+		MonoType *raw_type = p_delegate->get_mono_type();
 
 		if (mono_type_get_type(raw_type) == MONO_TYPE_CLASS) {
 			// Arguments are accessibles as arguments of .Invoke method
@@ -1679,7 +1786,7 @@ bool CSharpScript::_get_member_export(GDMonoClass *p_class, GDMonoClassMember *p
 
 		MonoObject *attr = p_member->get_attribute(CACHED_CLASS(ExportAttribute));
 
-		PropertyHint hint;
+		PropertyHint hint = PROPERTY_HINT_NONE;
 		String hint_string;
 
 		if (variant_type == Variant::NIL) {
@@ -1865,7 +1972,11 @@ bool CSharpScript::can_instance() const {
 	}
 #endif
 
-	return valid || (!tool && !ScriptServer::is_scripting_enabled());
+#ifdef TOOLS_ENABLED
+	return valid && (tool || ScriptServer::is_scripting_enabled());
+#else
+	return valid;
+#endif
 }
 
 StringName CSharpScript::get_instance_base_type() const {
@@ -1963,30 +2074,23 @@ Variant CSharpScript::_new(const Variant **p_args, int p_argcount, Variant::Call
 
 ScriptInstance *CSharpScript::instance_create(Object *p_this) {
 
-	ERR_FAIL_COND_V(!valid, NULL);
-
-	if (!tool && !ScriptServer::is_scripting_enabled()) {
-#ifdef TOOLS_ENABLED
-		PlaceHolderScriptInstance *si = memnew(PlaceHolderScriptInstance(CSharpLanguage::get_singleton(), Ref<Script>(this), p_this));
-		placeholders.insert(si);
-		_update_exports();
-		return si;
-#else
-		return NULL;
+#ifdef DEBUG_ENABLED
+	CRASH_COND(!valid);
 #endif
-	}
 
 	if (!script_class) {
 		if (GDMono::get_singleton()->get_project_assembly() == NULL) {
 			// The project assembly is not loaded
 			ERR_EXPLAIN("Cannot instance script because the project assembly is not loaded. Script: " + get_path());
 			ERR_FAIL_V(NULL);
+		} else {
+			// The project assembly is loaded, but the class could not found
+			ERR_EXPLAIN("Cannot instance script because the class '" + name + "' could not be found. Script: " + get_path());
+			ERR_FAIL_V(NULL);
 		}
-
-		// The project assembly is loaded, but the class could not found
-		ERR_EXPLAIN("Cannot instance script because the class '" + name + "' could not be found. Script: " + get_path());
-		ERR_FAIL_V(NULL);
 	}
+
+	ERR_FAIL_COND_V(!valid, NULL);
 
 	if (native) {
 		String native_name = native->get_name();
@@ -2001,6 +2105,18 @@ ScriptInstance *CSharpScript::instance_create(Object *p_this) {
 
 	Variant::CallError unchecked_error;
 	return _create_instance(NULL, 0, p_this, Object::cast_to<Reference>(p_this), unchecked_error);
+}
+
+PlaceHolderScriptInstance *CSharpScript::placeholder_instance_create(Object *p_this) {
+
+#ifdef TOOLS_ENABLED
+	PlaceHolderScriptInstance *si = memnew(PlaceHolderScriptInstance(CSharpLanguage::get_singleton(), Ref<Script>(this), p_this));
+	placeholders.insert(si);
+	_update_exports();
+	return si;
+#else
+	return NULL;
+#endif
 }
 
 bool CSharpScript::instance_has(const Object *p_this) const {
@@ -2040,6 +2156,9 @@ void CSharpScript::set_source_code(const String &p_code) {
 
 bool CSharpScript::has_method(const StringName &p_method) const {
 
+	if (!script_class)
+		return false;
+
 	return script_class->has_fetched_method_unknown_params(p_method);
 }
 
@@ -2066,9 +2185,7 @@ Error CSharpScript::reload(bool p_keep_state) {
 
 		if (script_class) {
 #ifdef DEBUG_ENABLED
-			OS::get_singleton()->print(String("Found class " + script_class->get_namespace() + "." +
-											  script_class->get_name() + " for script " + get_path() + "\n")
-											   .utf8());
+			print_verbose("Found class " + script_class->get_namespace() + "." + script_class->get_name() + " for script " + get_path());
 #endif
 
 			tool = script_class->has_attribute(CACHED_CLASS(ToolAttribute));

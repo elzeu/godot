@@ -589,7 +589,7 @@ void VisualServerScene::instance_set_blend_shape_weight(RID p_instance, int p_sh
 	}
 
 	ERR_FAIL_INDEX(p_shape, instance->blend_values.size());
-	instance->blend_values[p_shape] = p_weight;
+	instance->blend_values.write[p_shape] = p_weight;
 }
 
 void VisualServerScene::instance_set_surface_material(RID p_instance, int p_surface, RID p_material) {
@@ -606,7 +606,7 @@ void VisualServerScene::instance_set_surface_material(RID p_instance, int p_surf
 	if (instance->materials[p_surface].is_valid()) {
 		VSG::storage->material_remove_instance_owner(instance->materials[p_surface], instance);
 	}
-	instance->materials[p_surface] = p_material;
+	instance->materials.write[p_surface] = p_material;
 	instance->base_material_changed();
 
 	if (instance->materials[p_surface].is_valid()) {
@@ -820,7 +820,7 @@ void VisualServerScene::instance_geometry_set_flag(RID p_instance, VS::InstanceF
 			instance->baked_light = p_enabled;
 
 		} break;
-		case VS::INSTANCE_FLAG_REDRAW_FRAME_IF_VISIBLE: {
+		case VS::INSTANCE_FLAG_DRAW_NEXT_FRAME_IF_VISIBLE: {
 
 			instance->redraw_if_visible = p_enabled;
 
@@ -1180,7 +1180,7 @@ _FORCE_INLINE_ static void _light_capture_sample_octree(const RasterizerStorage:
 	r_color = color_interp[0].linear_interpolate(color_interp[1], level_filter);
 	r_alpha = Math::lerp(alpha_interp[0], alpha_interp[1], level_filter);
 
-	//	print_line("pos: " + p_posf + " level " + rtos(p_level) + " down to " + itos(target_level) + "." + rtos(level_filter) + " color " + r_color + " alpha " + rtos(r_alpha));
+	//print_line("pos: " + p_posf + " level " + rtos(p_level) + " down to " + itos(target_level) + "." + rtos(level_filter) + " color " + r_color + " alpha " + rtos(r_alpha));
 }
 
 _FORCE_INLINE_ static Color _light_capture_voxel_cone_trace(const RasterizerStorage::LightmapCaptureOctree *p_octree, const Vector3 &p_pos, const Vector3 &p_dir, float p_aperture, int p_cell_subdiv) {
@@ -1253,7 +1253,7 @@ void VisualServerScene::_update_instance_lightmap_captures(Instance *p_instance)
 
 			Vector3 dir = to_cell_xform.basis.xform(cone_traces[i]).normalized();
 			Color capture = _light_capture_voxel_cone_trace(octree_r.ptr(), pos, dir, cone_aperture, cell_subdiv);
-			p_instance->lightmap_capture_data[i] += capture;
+			p_instance->lightmap_capture_data.write[i] += capture;
 		}
 	}
 }
@@ -1464,14 +1464,14 @@ void VisualServerScene::_light_instance_update_shadow(Instance *p_instance, cons
 				light_frustum_planes.resize(6);
 
 				//right/left
-				light_frustum_planes[0] = Plane(x_vec, x_max);
-				light_frustum_planes[1] = Plane(-x_vec, -x_min);
+				light_frustum_planes.write[0] = Plane(x_vec, x_max);
+				light_frustum_planes.write[1] = Plane(-x_vec, -x_min);
 				//top/bottom
-				light_frustum_planes[2] = Plane(y_vec, y_max);
-				light_frustum_planes[3] = Plane(-y_vec, -y_min);
+				light_frustum_planes.write[2] = Plane(y_vec, y_max);
+				light_frustum_planes.write[3] = Plane(-y_vec, -y_min);
 				//near/far
-				light_frustum_planes[4] = Plane(z_vec, z_max + 1e6);
-				light_frustum_planes[5] = Plane(-z_vec, -z_min); // z_min is ok, since casters further than far-light plane are not needed
+				light_frustum_planes.write[4] = Plane(z_vec, z_max + 1e6);
+				light_frustum_planes.write[5] = Plane(-z_vec, -z_min); // z_min is ok, since casters further than far-light plane are not needed
 
 				int cull_count = p_scenario->octree.cull_convex(light_frustum_planes, instance_shadow_cull_result, MAX_INSTANCE_CULL, VS::INSTANCE_GEOMETRY_MASK);
 
@@ -1532,11 +1532,11 @@ void VisualServerScene::_light_instance_update_shadow(Instance *p_instance, cons
 						float z = i == 0 ? -1 : 1;
 						Vector<Plane> planes;
 						planes.resize(5);
-						planes[0] = light_transform.xform(Plane(Vector3(0, 0, z), radius));
-						planes[1] = light_transform.xform(Plane(Vector3(1, 0, z).normalized(), radius));
-						planes[2] = light_transform.xform(Plane(Vector3(-1, 0, z).normalized(), radius));
-						planes[3] = light_transform.xform(Plane(Vector3(0, 1, z).normalized(), radius));
-						planes[4] = light_transform.xform(Plane(Vector3(0, -1, z).normalized(), radius));
+						planes.write[0] = light_transform.xform(Plane(Vector3(0, 0, z), radius));
+						planes.write[1] = light_transform.xform(Plane(Vector3(1, 0, z).normalized(), radius));
+						planes.write[2] = light_transform.xform(Plane(Vector3(-1, 0, z).normalized(), radius));
+						planes.write[3] = light_transform.xform(Plane(Vector3(0, 1, z).normalized(), radius));
+						planes.write[4] = light_transform.xform(Plane(Vector3(0, -1, z).normalized(), radius));
 
 						int cull_count = p_scenario->octree.cull_convex(planes, instance_shadow_cull_result, MAX_INSTANCE_CULL, VS::INSTANCE_GEOMETRY_MASK);
 						Plane near_plane(light_transform.origin, light_transform.basis.get_axis(2) * z);
@@ -1799,11 +1799,12 @@ void VisualServerScene::_prepare_scene(const Transform p_cam_transform, const Ca
 
 	//light_samplers_culled=0;
 
-	/*	print_line("OT: "+rtos( (OS::get_singleton()->get_ticks_usec()-t)/1000.0));
+	/*
+	print_line("OT: "+rtos( (OS::get_singleton()->get_ticks_usec()-t)/1000.0));
 	print_line("OTO: "+itos(p_scenario->octree.get_octant_count()));
-	//print_line("OTE: "+itos(p_scenario->octree.get_elem_count()));
+	print_line("OTE: "+itos(p_scenario->octree.get_elem_count()));
 	print_line("OTP: "+itos(p_scenario->octree.get_pair_count()));
-*/
+	*/
 
 	/* STEP 3 - PROCESS PORTALS, VALIDATE ROOMS */
 	//removed, will replace with culling
@@ -1898,7 +1899,7 @@ void VisualServerScene::_prepare_scene(const Transform p_cam_transform, const Ca
 
 					InstanceLightData *light = static_cast<InstanceLightData *>(E->get()->base_data);
 
-					ins->light_instances[l++] = light->instance;
+					ins->light_instances.write[l++] = light->instance;
 				}
 
 				geom->lighting_dirty = false;
@@ -1913,7 +1914,7 @@ void VisualServerScene::_prepare_scene(const Transform p_cam_transform, const Ca
 
 					InstanceReflectionProbeData *reflection_probe = static_cast<InstanceReflectionProbeData *>(E->get()->base_data);
 
-					ins->reflection_probe_instances[l++] = reflection_probe->instance;
+					ins->reflection_probe_instances.write[l++] = reflection_probe->instance;
 				}
 
 				geom->reflection_dirty = false;
@@ -1928,7 +1929,7 @@ void VisualServerScene::_prepare_scene(const Transform p_cam_transform, const Ca
 
 					InstanceGIProbeData *gi_probe = static_cast<InstanceGIProbeData *>(E->get()->base_data);
 
-					ins->gi_probe_instances[l++] = gi_probe->probe_instance;
+					ins->gi_probe_instances.write[l++] = gi_probe->probe_instance;
 				}
 
 				geom->gi_probes_dirty = false;
@@ -2302,7 +2303,6 @@ void VisualServerScene::_setup_gi_probe(Instance *p_instance) {
 	int size_divisor = 1;
 
 	if (probe->dynamic.compression == RasterizerStorage::GI_PROBE_S3TC) {
-		print_line("S3TC");
 		size_limit = 4;
 		size_divisor = 4;
 	}
@@ -2372,7 +2372,7 @@ void VisualServerScene::_setup_gi_probe(Instance *p_instance) {
 
 			uint32_t key = blockz * blockw * blockh + blocky * blockw + blockx;
 
-			Map<uint32_t, InstanceGIProbeData::CompBlockS3TC> &cmap = comp_blocks[mipmap];
+			Map<uint32_t, InstanceGIProbeData::CompBlockS3TC> &cmap = comp_blocks.write[mipmap];
 
 			if (!cmap.has(key)) {
 
@@ -2391,9 +2391,9 @@ void VisualServerScene::_setup_gi_probe(Instance *p_instance) {
 		probe->dynamic.mipmaps_s3tc.resize(mipmap_count);
 
 		for (int i = 0; i < mipmap_count; i++) {
-			print_line("S3TC level: " + itos(i) + " blocks: " + itos(comp_blocks[i].size()));
-			probe->dynamic.mipmaps_s3tc[i].resize(comp_blocks[i].size());
-			PoolVector<InstanceGIProbeData::CompBlockS3TC>::Write w = probe->dynamic.mipmaps_s3tc[i].write();
+			//print_line("S3TC level: " + itos(i) + " blocks: " + itos(comp_blocks[i].size()));
+			probe->dynamic.mipmaps_s3tc.write[i].resize(comp_blocks[i].size());
+			PoolVector<InstanceGIProbeData::CompBlockS3TC>::Write w = probe->dynamic.mipmaps_s3tc.write[i].write();
 			int block_idx = 0;
 
 			for (Map<uint32_t, InstanceGIProbeData::CompBlockS3TC>::Element *E = comp_blocks[i].front(); E; E = E->next()) {
@@ -2759,7 +2759,7 @@ void VisualServerScene::_bake_gi_probe_light(const GIProbeDataHeader *header, co
 					light->energy[2] += int32_t(light_b * att * ((cell->albedo) & 0xFF) / 255.0);
 				}
 			}
-			// print_line("BAKE TIME: " + rtos((OS::get_singleton()->get_ticks_usec() - us) / 1000000.0));
+			//print_line("BAKE TIME: " + rtos((OS::get_singleton()->get_ticks_usec() - us) / 1000000.0));
 		} break;
 	}
 }
@@ -2861,7 +2861,7 @@ void VisualServerScene::_bake_gi_probe(Instance *p_gi_probe) {
 			int level_cell_count = probe_data->dynamic.level_cell_lists[i].size();
 			const uint32_t *level_cells = probe_data->dynamic.level_cell_lists[i].ptr();
 
-			PoolVector<uint8_t>::Write lw = probe_data->dynamic.mipmaps_3d[stage].write();
+			PoolVector<uint8_t>::Write lw = probe_data->dynamic.mipmaps_3d.write[stage].write();
 			uint8_t *mipmapw = lw.ptr();
 
 			uint32_t sizes[3] = { header->width >> stage, header->height >> stage, header->depth >> stage };
@@ -2890,7 +2890,7 @@ void VisualServerScene::_bake_gi_probe(Instance *p_gi_probe) {
 
 		for (int mmi = 0; mmi < mipmap_count; mmi++) {
 
-			PoolVector<uint8_t>::Write mmw = probe_data->dynamic.mipmaps_3d[mmi].write();
+			PoolVector<uint8_t>::Write mmw = probe_data->dynamic.mipmaps_3d.write[mmi].write();
 			int block_count = probe_data->dynamic.mipmaps_s3tc[mmi].size();
 			PoolVector<InstanceGIProbeData::CompBlockS3TC>::Read mmr = probe_data->dynamic.mipmaps_s3tc[mmi].read();
 
@@ -3180,7 +3180,7 @@ void VisualServerScene::render_probes() {
 				} break;
 				case GI_UPDATE_STAGE_UPLOADING: {
 
-					// uint64_t us = OS::get_singleton()->get_ticks_usec();
+					//uint64_t us = OS::get_singleton()->get_ticks_usec();
 
 					for (int i = 0; i < (int)probe->dynamic.mipmaps_3d.size(); i++) {
 
@@ -3190,7 +3190,7 @@ void VisualServerScene::render_probes() {
 
 					probe->dynamic.updating_stage = GI_UPDATE_STAGE_CHECK;
 
-					// print_line("UPLOAD TIME: " + rtos((OS::get_singleton()->get_ticks_usec() - us) / 1000000.0));
+					//print_line("UPLOAD TIME: " + rtos((OS::get_singleton()->get_ticks_usec() - us) / 1000000.0));
 				} break;
 			}
 		}
@@ -3223,7 +3223,7 @@ void VisualServerScene::_update_dirty_instance(Instance *p_instance) {
 			if (new_blend_shape_count != p_instance->blend_values.size()) {
 				p_instance->blend_values.resize(new_blend_shape_count);
 				for (int i = 0; i < new_blend_shape_count; i++) {
-					p_instance->blend_values[i] = 0;
+					p_instance->blend_values.write[i] = 0;
 				}
 			}
 		}

@@ -56,6 +56,7 @@
 #include "editor/inspector_dock.h"
 #include "editor/node_dock.h"
 #include "editor/pane_drag.h"
+#include "editor/plugin_config_dialog.h"
 #include "editor/progress_dialog.h"
 #include "editor/project_export.h"
 #include "editor/project_settings_editor.h"
@@ -154,6 +155,7 @@ private:
 		RUN_PLAY_CUSTOM_SCENE,
 		RUN_SCENE_SETTINGS,
 		RUN_SETTINGS,
+		RUN_PROJECT_DATA_FOLDER,
 		RUN_PROJECT_MANAGER,
 		RUN_FILE_SERVER,
 		RUN_LIVE_DEBUG,
@@ -168,6 +170,8 @@ private:
 		SETTINGS_LAYOUT_SAVE,
 		SETTINGS_LAYOUT_DELETE,
 		SETTINGS_LAYOUT_DEFAULT,
+		SETTINGS_EDITOR_DATA_FOLDER,
+		SETTINGS_EDITOR_CONFIG_FOLDER,
 		SETTINGS_MANAGE_EXPORT_TEMPLATES,
 		SETTINGS_PICK_MAIN_SCENE,
 		SETTINGS_TOGGLE_FULLSCREEN,
@@ -220,6 +224,7 @@ private:
 	//main tabs
 
 	Tabs *scene_tabs;
+	PopupMenu *scene_tabs_context_menu;
 	Panel *tab_preview_panel;
 	TextureRect *tab_preview;
 	int tab_closing;
@@ -252,6 +257,8 @@ private:
 	ToolButton *play_custom_scene_button;
 	ToolButton *search_button;
 	TextureProgress *audio_vu;
+
+	PluginConfigDialog *plugin_config_dialog;
 
 	RichTextLabel *load_errors;
 	AcceptDialog *load_error_dialog;
@@ -411,6 +418,8 @@ private:
 	void _menu_option_confirm(int p_option, bool p_confirmed);
 	void _tool_menu_option(int p_idx);
 	void _update_debug_options();
+
+	void _on_plugin_ready(Object *p_script, const String &p_activate_name);
 
 	void _fs_changed();
 	void _resources_reimported(const Vector<String> &p_resources);

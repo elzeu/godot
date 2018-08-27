@@ -41,7 +41,10 @@
 #include "scene/3d/spatial.h"
 #include "scene/gui/control.h"
 #include "scene/gui/label.h"
+#include "scene/gui/menu_button.h"
+#include "scene/gui/panel.h"
 #include "scene/gui/panel_container.h"
+#include "scene/gui/popup_menu.h"
 #include "scene/main/timer.h"
 #include "scene/resources/mesh.h"
 #include "scene/scene_string_names.h"
@@ -182,6 +185,7 @@ public:
 
 Viewport::GUI::GUI() {
 
+	dragging = false;
 	mouse_focus = NULL;
 	mouse_click_grabber = NULL;
 	mouse_focus_button = -1;
@@ -441,7 +445,7 @@ void Viewport::_notification(int p_what) {
 
 						Vector2 point = get_canvas_transform().affine_inverse().xform(pos);
 						Physics2DDirectSpaceState::ShapeResult res[64];
-						int rc = ss2d->intersect_point(point, res, 64, Set<RID>(), 0xFFFFFFFF, true);
+						int rc = ss2d->intersect_point(point, res, 64, Set<RID>(), 0xFFFFFFFF, true, true, true);
 						for (int i = 0; i < rc; i++) {
 
 							if (res[i].collider_id && res[i].collider) {
@@ -524,7 +528,7 @@ void Viewport::_notification(int p_what) {
 							PhysicsDirectSpaceState *space = PhysicsServer::get_singleton()->space_get_direct_state(find_world()->get_space());
 							if (space) {
 
-								bool col = space->intersect_ray(from, from + dir * 10000, result, Set<RID>(), 0xFFFFFFFF, true);
+								bool col = space->intersect_ray(from, from + dir * 10000, result, Set<RID>(), 0xFFFFFFFF, true, true, true);
 								ObjectID new_collider = 0;
 								if (col) {
 
@@ -560,7 +564,7 @@ void Viewport::_notification(int p_what) {
 					PhysicsDirectSpaceState *space = PhysicsServer::get_singleton()->space_get_direct_state(find_world()->get_space());
 					if (space) {
 
-						bool col = space->intersect_ray(from, from + dir * 10000, result, Set<RID>(), 0xFFFFFFFF, true);
+						bool col = space->intersect_ray(from, from + dir * 10000, result, Set<RID>(), 0xFFFFFFFF, true, true, true);
 						ObjectID new_collider = 0;
 						if (col) {
 							CollisionObject *co = Object::cast_to<CollisionObject>(result.collider);
@@ -1503,12 +1507,6 @@ Control *Viewport::_gui_find_control_at_pos(CanvasItem *p_node, const Point2 &p_
 	if (Object::cast_to<Viewport>(p_node))
 		return NULL;
 
-	Control *c = Object::cast_to<Control>(p_node);
-
-	if (c) {
-		//print_line("at "+String(c->get_path())+" POS "+c->get_position()+" bt "+p_xform);
-	}
-
 	//subwindows first!!
 
 	if (!p_node->is_visible()) {
@@ -1520,6 +1518,8 @@ Control *Viewport::_gui_find_control_at_pos(CanvasItem *p_node, const Point2 &p_
 	// matrix.basis_determinant() == 0.0f implies that node does not exist on scene
 	if (matrix.basis_determinant() == 0.0f)
 		return NULL;
+
+	Control *c = Object::cast_to<Control>(p_node);
 
 	if (!c || !c->clips_input() || c->has_point(matrix.affine_inverse().xform(p_global))) {
 
@@ -1651,7 +1651,6 @@ void Viewport::_gui_input_event(Ref<InputEvent> p_event) {
 				*/
 
 				gui.mouse_focus = _gui_find_control(pos);
-				//print_line("has mf "+itos(gui.mouse_focus!=NULL));
 				gui.mouse_focus_button = mb->get_button_index();
 
 				if (!gui.mouse_focus) {
@@ -1680,11 +1679,6 @@ void Viewport::_gui_input_event(Ref<InputEvent> p_event) {
 				arr.push_back(gui.mouse_focus->get_class());
 				ScriptDebugger::get_singleton()->send_message("click_ctrl", arr);
 			}
-
-/*if (bool(GLOBAL_DEF("debug/print_clicked_control",false))) {
-
-					print_line(String(gui.mouse_focus->get_path())+" - "+pos);
-				}*/
 #endif
 
 			if (mb->get_button_index() == BUTTON_LEFT) { //assign focus
@@ -1725,6 +1719,7 @@ void Viewport::_gui_input_event(Ref<InputEvent> p_event) {
 				}
 
 				gui.drag_data = Variant();
+				gui.dragging = false;
 
 				if (gui.drag_preview) {
 					memdelete(gui.drag_preview);
@@ -1754,6 +1749,7 @@ void Viewport::_gui_input_event(Ref<InputEvent> p_event) {
 				}
 
 				gui.drag_data = Variant();
+				gui.dragging = false;
 				_propagate_viewport_notification(this, NOTIFICATION_DRAG_END);
 				//change mouse accordingly
 			}
@@ -1816,10 +1812,13 @@ void Viewport::_gui_input_event(Ref<InputEvent> p_event) {
 						Control *control = Object::cast_to<Control>(ci);
 						if (control) {
 
+							gui.dragging = true;
 							gui.drag_data = control->get_drag_data(control->get_global_transform_with_canvas().affine_inverse().xform(mpos) - gui.drag_accum);
 							if (gui.drag_data.get_type() != Variant::NIL) {
 
 								gui.mouse_focus = NULL;
+							} else {
+								gui.dragging = false;
 							}
 
 							if (control->data.mouse_filter == Control::MOUSE_FILTER_STOP)
@@ -1853,8 +1852,32 @@ void Viewport::_gui_input_event(Ref<InputEvent> p_event) {
 		if (gui.drag_data.get_type() == Variant::NIL && over && !gui.modal_stack.empty()) {
 
 			Control *top = gui.modal_stack.back()->get();
+
 			if (over != top && !top->is_a_parent_of(over)) {
-				over = NULL; //nothing can be found outside the modal stack
+
+				PopupMenu *popup_menu = Object::cast_to<PopupMenu>(top);
+				MenuButton *popup_menu_parent = NULL;
+				MenuButton *menu_button = Object::cast_to<MenuButton>(over);
+
+				if (popup_menu)
+					popup_menu_parent = Object::cast_to<MenuButton>(popup_menu->get_parent());
+
+				// If the mouse is over a menu button, this menu will open automatically
+				// if there is already a pop-up menu open at the same hierarchical level.
+				if (popup_menu_parent && menu_button &&
+						popup_menu_parent->get_icon().is_null() &&
+						menu_button->get_icon().is_null() &&
+						(popup_menu->get_parent()->get_parent()->is_a_parent_of(menu_button) ||
+								menu_button->get_parent()->is_a_parent_of(popup_menu))) {
+
+					popup_menu->notification(Control::NOTIFICATION_MODAL_CLOSE);
+					popup_menu->_modal_stack_remove();
+					popup_menu->hide();
+
+					menu_button->pressed();
+				} else {
+					over = NULL; //nothing can be found outside the modal stack
+				}
 			}
 		}
 
@@ -2235,6 +2258,7 @@ void Viewport::_gui_force_drag(Control *p_base, const Variant &p_data, Control *
 	ERR_EXPLAIN("Drag data must be a value");
 	ERR_FAIL_COND(p_data.get_type() == Variant::NIL);
 
+	gui.dragging = true;
 	gui.drag_data = p_data;
 	gui.mouse_focus = NULL;
 
@@ -2674,6 +2698,9 @@ bool Viewport::is_snap_controls_to_pixels_enabled() const {
 	return snap_controls_to_pixels;
 }
 
+bool Viewport::gui_is_dragging() const {
+	return gui.dragging;
+}
 void Viewport::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_use_arvr", "use"), &Viewport::set_use_arvr);
@@ -2760,6 +2787,7 @@ void Viewport::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("gui_has_modal_stack"), &Viewport::gui_has_modal_stack);
 	ClassDB::bind_method(D_METHOD("gui_get_drag_data"), &Viewport::gui_get_drag_data);
+	ClassDB::bind_method(D_METHOD("gui_is_dragging"), &Viewport::gui_is_dragging);
 
 	ClassDB::bind_method(D_METHOD("set_disable_input", "disable"), &Viewport::set_disable_input);
 	ClassDB::bind_method(D_METHOD("is_input_disabled"), &Viewport::is_input_disabled);

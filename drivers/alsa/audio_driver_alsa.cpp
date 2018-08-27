@@ -116,9 +116,7 @@ Error AudioDriverALSA::init_device() {
 	status = snd_pcm_hw_params_set_period_size_near(pcm_handle, hwparams, &period_size, NULL);
 	CHECK_FAIL(status < 0);
 
-	if (OS::get_singleton()->is_stdout_verbose()) {
-		print_line("audio buffer frames: " + itos(period_size) + " calculated latency: " + itos(period_size * 1000 / mix_rate) + "ms");
-	}
+	print_verbose("Audio buffer frames: " + itos(period_size) + " calculated latency: " + itos(period_size * 1000 / mix_rate) + "ms");
 
 	status = snd_pcm_hw_params_set_periods_near(pcm_handle, hwparams, &periods, NULL);
 	CHECK_FAIL(status < 0);
@@ -174,14 +172,14 @@ void AudioDriverALSA::thread_func(void *p_udata) {
 
 		if (!ad->active) {
 			for (unsigned int i = 0; i < ad->period_size * ad->channels; i++) {
-				ad->samples_out[i] = 0;
+				ad->samples_out.write[i] = 0;
 			}
 
 		} else {
 			ad->audio_server_process(ad->period_size, ad->samples_in.ptrw());
 
 			for (unsigned int i = 0; i < ad->period_size * ad->channels; i++) {
-				ad->samples_out[i] = ad->samples_in[i] >> 16;
+				ad->samples_out.write[i] = ad->samples_in[i] >> 16;
 			}
 		}
 

@@ -55,7 +55,7 @@ RID VisualServer::texture_create_from_image(const Ref<Image> &p_image, uint32_t 
 
 	ERR_FAIL_COND_V(!p_image.is_valid(), RID());
 	RID texture = texture_create();
-	texture_allocate(texture, p_image->get_width(), p_image->get_height(), p_image->get_format(), p_flags); //if it has mipmaps, use, else generate
+	texture_allocate(texture, p_image->get_width(), p_image->get_height(), 0, p_image->get_format(), VS::TEXTURE_TYPE_2D, p_flags); //if it has mipmaps, use, else generate
 	ERR_FAIL_COND_V(!texture.is_valid(), texture);
 
 	texture_set_data(texture, p_image);
@@ -72,7 +72,9 @@ Array VisualServer::_texture_debug_usage_bind() {
 
 		Dictionary dict;
 		dict["texture"] = E->get().texture;
-		dict["size"] = E->get().size;
+		dict["width"] = E->get().width;
+		dict["height"] = E->get().height;
+		dict["depth"] = E->get().depth;
 		dict["format"] = E->get().format;
 		dict["bytes"] = E->get().bytes;
 		dict["path"] = E->get().path;
@@ -187,16 +189,14 @@ RID VisualServer::_make_test_cube() {
 	PoolVector<float> tangents;
 	PoolVector<Vector3> uvs;
 
-	int vtx_idx = 0;
-#define ADD_VTX(m_idx)                                                             \
-	vertices.push_back(face_points[m_idx]);                                        \
-	normals.push_back(normal_points[m_idx]);                                       \
-	tangents.push_back(normal_points[m_idx][1]);                                   \
-	tangents.push_back(normal_points[m_idx][2]);                                   \
-	tangents.push_back(normal_points[m_idx][0]);                                   \
-	tangents.push_back(1.0);                                                       \
-	uvs.push_back(Vector3(uv_points[m_idx * 2 + 0], uv_points[m_idx * 2 + 1], 0)); \
-	vtx_idx++;
+#define ADD_VTX(m_idx)                           \
+	vertices.push_back(face_points[m_idx]);      \
+	normals.push_back(normal_points[m_idx]);     \
+	tangents.push_back(normal_points[m_idx][1]); \
+	tangents.push_back(normal_points[m_idx][2]); \
+	tangents.push_back(normal_points[m_idx][0]); \
+	tangents.push_back(1.0);                     \
+	uvs.push_back(Vector3(uv_points[m_idx * 2 + 0], uv_points[m_idx * 2 + 1], 0));
 
 	for (int i = 0; i < 6; i++) {
 
@@ -335,7 +335,7 @@ RID VisualServer::get_white_texture() {
 	}
 	Ref<Image> white = memnew(Image(4, 4, 0, Image::FORMAT_RGB8, wt));
 	white_texture = texture_create();
-	texture_allocate(white_texture, 4, 4, Image::FORMAT_RGB8);
+	texture_allocate(white_texture, 4, 4, 0, Image::FORMAT_RGB8, TEXTURE_TYPE_2D);
 	texture_set_data(white_texture, white);
 	return white_texture;
 }
@@ -746,7 +746,7 @@ Error VisualServer::_surface_set_data(Array p_arrays, uint32_t p_format, uint32_
 
 		if (first) {
 			for (int i = 0; i < total_bones; i++) {
-				r_bone_aabb[i].size = Vector3(-1, -1, -1); //negative means unused
+				r_bone_aabb.write[i].size = Vector3(-1, -1, -1); //negative means unused
 			}
 		}
 
@@ -1650,27 +1650,29 @@ Array VisualServer::_mesh_surface_get_skeleton_aabb_bind(RID p_mesh, int p_surfa
 void VisualServer::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("force_sync"), &VisualServer::sync);
-	ClassDB::bind_method(D_METHOD("force_draw", "swap_buffers"), &VisualServer::draw, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("force_draw", "swap_buffers", "frame_step"), &VisualServer::draw, DEFVAL(true), DEFVAL(0.0));
 
 	// "draw" and "sync" are deprecated duplicates of "force_draw" and "force_sync"
 	// FIXME: Add deprecation messages using GH-4397 once available, and retire
 	// once the warnings have been enabled for a full release cycle
 	ClassDB::bind_method(D_METHOD("sync"), &VisualServer::sync);
-	ClassDB::bind_method(D_METHOD("draw", "swap_buffers"), &VisualServer::draw, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("draw", "swap_buffers", "frame_step"), &VisualServer::draw, DEFVAL(true), DEFVAL(0.0));
 
 	ClassDB::bind_method(D_METHOD("texture_create"), &VisualServer::texture_create);
 	ClassDB::bind_method(D_METHOD("texture_create_from_image", "image", "flags"), &VisualServer::texture_create_from_image, DEFVAL(TEXTURE_FLAGS_DEFAULT));
-	ClassDB::bind_method(D_METHOD("texture_allocate", "texture", "width", "height", "format", "flags"), &VisualServer::texture_allocate, DEFVAL(TEXTURE_FLAGS_DEFAULT));
-	ClassDB::bind_method(D_METHOD("texture_set_data", "texture", "image", "cube_side"), &VisualServer::texture_set_data, DEFVAL(CUBEMAP_LEFT));
-	ClassDB::bind_method(D_METHOD("texture_set_data_partial", "texture", "image", "src_x", "src_y", "src_w", "src_h", "dst_x", "dst_y", "dst_mip", "cube_side"), &VisualServer::texture_set_data_partial, DEFVAL(CUBEMAP_LEFT));
+	ClassDB::bind_method(D_METHOD("texture_allocate", "texture", "width", "height", "depth_3d", "format", "type", "flags"), &VisualServer::texture_allocate, DEFVAL(TEXTURE_FLAGS_DEFAULT));
+	ClassDB::bind_method(D_METHOD("texture_set_data", "texture", "image", "layer"), &VisualServer::texture_set_data, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("texture_set_data_partial", "texture", "image", "src_x", "src_y", "src_w", "src_h", "dst_x", "dst_y", "dst_mip", "layer"), &VisualServer::texture_set_data_partial, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("texture_get_data", "texture", "cube_side"), &VisualServer::texture_get_data, DEFVAL(CUBEMAP_LEFT));
 	ClassDB::bind_method(D_METHOD("texture_set_flags", "texture", "flags"), &VisualServer::texture_set_flags);
 	ClassDB::bind_method(D_METHOD("texture_get_flags", "texture"), &VisualServer::texture_get_flags);
 	ClassDB::bind_method(D_METHOD("texture_get_format", "texture"), &VisualServer::texture_get_format);
+	ClassDB::bind_method(D_METHOD("texture_get_type", "texture"), &VisualServer::texture_get_type);
 	ClassDB::bind_method(D_METHOD("texture_get_texid", "texture"), &VisualServer::texture_get_texid);
 	ClassDB::bind_method(D_METHOD("texture_get_width", "texture"), &VisualServer::texture_get_width);
 	ClassDB::bind_method(D_METHOD("texture_get_height", "texture"), &VisualServer::texture_get_height);
-	ClassDB::bind_method(D_METHOD("texture_set_size_override", "texture", "width", "height"), &VisualServer::texture_set_size_override);
+	ClassDB::bind_method(D_METHOD("texture_get_depth", "texture"), &VisualServer::texture_get_depth);
+	ClassDB::bind_method(D_METHOD("texture_set_size_override", "texture", "width", "height", "depth"), &VisualServer::texture_set_size_override);
 	ClassDB::bind_method(D_METHOD("texture_set_path", "texture", "path"), &VisualServer::texture_set_path);
 	ClassDB::bind_method(D_METHOD("texture_get_path", "texture"), &VisualServer::texture_get_path);
 	ClassDB::bind_method(D_METHOD("texture_set_shrink_all_x2_on_set_data", "shrink"), &VisualServer::texture_set_shrink_all_x2_on_set_data);
@@ -1804,24 +1806,24 @@ void VisualServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("gi_probe_get_bounds", "probe"), &VisualServer::gi_probe_get_bounds);
 	ClassDB::bind_method(D_METHOD("gi_probe_set_cell_size", "probe", "range"), &VisualServer::gi_probe_set_cell_size);
 	ClassDB::bind_method(D_METHOD("gi_probe_get_cell_size", "probe"), &VisualServer::gi_probe_get_cell_size);
-	ClassDB::bind_method(D_METHOD("gi_probe_set_to_cell_xform", "xform"), &VisualServer::gi_probe_set_to_cell_xform);
-	ClassDB::bind_method(D_METHOD("gi_probe_get_to_cell_xform"), &VisualServer::gi_probe_get_to_cell_xform);
-	ClassDB::bind_method(D_METHOD("gi_probe_set_dynamic_data", "data"), &VisualServer::gi_probe_set_dynamic_data);
-	ClassDB::bind_method(D_METHOD("gi_probe_get_dynamic_data"), &VisualServer::gi_probe_get_dynamic_data);
-	ClassDB::bind_method(D_METHOD("gi_probe_set_dynamic_range", "range"), &VisualServer::gi_probe_set_dynamic_range);
-	ClassDB::bind_method(D_METHOD("gi_probe_get_dynamic_range"), &VisualServer::gi_probe_get_dynamic_range);
-	ClassDB::bind_method(D_METHOD("gi_probe_set_energy", "energy"), &VisualServer::gi_probe_set_energy);
-	ClassDB::bind_method(D_METHOD("gi_probe_get_energy"), &VisualServer::gi_probe_get_energy);
-	ClassDB::bind_method(D_METHOD("gi_probe_set_bias", "bias"), &VisualServer::gi_probe_set_bias);
-	ClassDB::bind_method(D_METHOD("gi_probe_get_bias"), &VisualServer::gi_probe_get_bias);
-	ClassDB::bind_method(D_METHOD("gi_probe_set_normal_bias", "bias"), &VisualServer::gi_probe_set_normal_bias);
-	ClassDB::bind_method(D_METHOD("gi_probe_get_normal_bias"), &VisualServer::gi_probe_get_normal_bias);
-	ClassDB::bind_method(D_METHOD("gi_probe_set_propagation", "propagation"), &VisualServer::gi_probe_set_propagation);
-	ClassDB::bind_method(D_METHOD("gi_probe_get_propagation"), &VisualServer::gi_probe_get_propagation);
-	ClassDB::bind_method(D_METHOD("gi_probe_set_interior", "enable"), &VisualServer::gi_probe_set_interior);
-	ClassDB::bind_method(D_METHOD("gi_probe_is_interior"), &VisualServer::gi_probe_is_interior);
-	ClassDB::bind_method(D_METHOD("gi_probe_set_compress", "enable"), &VisualServer::gi_probe_set_compress);
-	ClassDB::bind_method(D_METHOD("gi_probe_is_compressed"), &VisualServer::gi_probe_is_compressed);
+	ClassDB::bind_method(D_METHOD("gi_probe_set_to_cell_xform", "probe", "xform"), &VisualServer::gi_probe_set_to_cell_xform);
+	ClassDB::bind_method(D_METHOD("gi_probe_get_to_cell_xform", "probe"), &VisualServer::gi_probe_get_to_cell_xform);
+	ClassDB::bind_method(D_METHOD("gi_probe_set_dynamic_data", "probe", "data"), &VisualServer::gi_probe_set_dynamic_data);
+	ClassDB::bind_method(D_METHOD("gi_probe_get_dynamic_data", "probe"), &VisualServer::gi_probe_get_dynamic_data);
+	ClassDB::bind_method(D_METHOD("gi_probe_set_dynamic_range", "probe", "range"), &VisualServer::gi_probe_set_dynamic_range);
+	ClassDB::bind_method(D_METHOD("gi_probe_get_dynamic_range", "probe"), &VisualServer::gi_probe_get_dynamic_range);
+	ClassDB::bind_method(D_METHOD("gi_probe_set_energy", "probe", "energy"), &VisualServer::gi_probe_set_energy);
+	ClassDB::bind_method(D_METHOD("gi_probe_get_energy", "probe"), &VisualServer::gi_probe_get_energy);
+	ClassDB::bind_method(D_METHOD("gi_probe_set_bias", "probe", "bias"), &VisualServer::gi_probe_set_bias);
+	ClassDB::bind_method(D_METHOD("gi_probe_get_bias", "probe"), &VisualServer::gi_probe_get_bias);
+	ClassDB::bind_method(D_METHOD("gi_probe_set_normal_bias", "probe", "bias"), &VisualServer::gi_probe_set_normal_bias);
+	ClassDB::bind_method(D_METHOD("gi_probe_get_normal_bias", "probe"), &VisualServer::gi_probe_get_normal_bias);
+	ClassDB::bind_method(D_METHOD("gi_probe_set_propagation", "probe", "propagation"), &VisualServer::gi_probe_set_propagation);
+	ClassDB::bind_method(D_METHOD("gi_probe_get_propagation", "probe"), &VisualServer::gi_probe_get_propagation);
+	ClassDB::bind_method(D_METHOD("gi_probe_set_interior", "probe", "enable"), &VisualServer::gi_probe_set_interior);
+	ClassDB::bind_method(D_METHOD("gi_probe_is_interior", "probe"), &VisualServer::gi_probe_is_interior);
+	ClassDB::bind_method(D_METHOD("gi_probe_set_compress", "probe", "enable"), &VisualServer::gi_probe_set_compress);
+	ClassDB::bind_method(D_METHOD("gi_probe_is_compressed", "probe"), &VisualServer::gi_probe_is_compressed);
 
 	ClassDB::bind_method(D_METHOD("lightmap_capture_create"), &VisualServer::lightmap_capture_create);
 	ClassDB::bind_method(D_METHOD("lightmap_capture_set_bounds", "capture", "bounds"), &VisualServer::lightmap_capture_set_bounds);
@@ -1910,7 +1912,7 @@ void VisualServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("environment_set_tonemap", "env", "tone_mapper", "exposure", "white", "auto_exposure", "min_luminance", "max_luminance", "auto_exp_speed", "auto_exp_grey"), &VisualServer::environment_set_tonemap);
 	ClassDB::bind_method(D_METHOD("environment_set_adjustment", "env", "enable", "brightness", "contrast", "saturation", "ramp"), &VisualServer::environment_set_adjustment);
 	ClassDB::bind_method(D_METHOD("environment_set_ssr", "env", "enable", "max_steps", "fade_in", "fade_out", "depth_tolerance", "roughness"), &VisualServer::environment_set_ssr);
-	ClassDB::bind_method(D_METHOD("environment_set_ssao", "env", "enable", "radius", "intensity", "radius2", "intensity2", "bias", "light_affect", "color", "quality", "blur", "bilateral_sharpness"), &VisualServer::environment_set_ssao);
+	ClassDB::bind_method(D_METHOD("environment_set_ssao", "env", "enable", "radius", "intensity", "radius2", "intensity2", "bias", "light_affect", "ao_channel_affect", "color", "quality", "blur", "bilateral_sharpness"), &VisualServer::environment_set_ssao);
 	ClassDB::bind_method(D_METHOD("environment_set_fog", "env", "enable", "color", "sun_color", "sun_amount"), &VisualServer::environment_set_fog);
 	ClassDB::bind_method(D_METHOD("environment_set_fog_depth", "env", "enable", "depth_begin", "depth_curve", "transmit", "transmit_curve"), &VisualServer::environment_set_fog_depth);
 	ClassDB::bind_method(D_METHOD("environment_set_fog_height", "env", "enable", "min_height", "max_height", "height_curve"), &VisualServer::environment_set_fog_height);
@@ -2061,13 +2063,17 @@ void VisualServer::_bind_methods() {
 	BIND_ENUM_CONSTANT(CUBEMAP_FRONT);
 	BIND_ENUM_CONSTANT(CUBEMAP_BACK);
 
+	BIND_ENUM_CONSTANT(TEXTURE_TYPE_2D);
+	BIND_ENUM_CONSTANT(TEXTURE_TYPE_CUBEMAP);
+	BIND_ENUM_CONSTANT(TEXTURE_TYPE_2D_ARRAY);
+	BIND_ENUM_CONSTANT(TEXTURE_TYPE_3D);
+
 	BIND_ENUM_CONSTANT(TEXTURE_FLAG_MIPMAPS);
 	BIND_ENUM_CONSTANT(TEXTURE_FLAG_REPEAT);
 	BIND_ENUM_CONSTANT(TEXTURE_FLAG_FILTER);
 	BIND_ENUM_CONSTANT(TEXTURE_FLAG_ANISOTROPIC_FILTER);
 	BIND_ENUM_CONSTANT(TEXTURE_FLAG_CONVERT_TO_LINEAR);
 	BIND_ENUM_CONSTANT(TEXTURE_FLAG_MIRRORED_REPEAT);
-	BIND_ENUM_CONSTANT(TEXTURE_FLAG_CUBEMAP);
 	BIND_ENUM_CONSTANT(TEXTURE_FLAG_USED_FOR_STREAMING);
 	BIND_ENUM_CONSTANT(TEXTURE_FLAGS_DEFAULT);
 
@@ -2203,7 +2209,7 @@ void VisualServer::_bind_methods() {
 	BIND_ENUM_CONSTANT(INSTANCE_GEOMETRY_MASK);
 
 	BIND_ENUM_CONSTANT(INSTANCE_FLAG_USE_BAKED_LIGHT);
-	BIND_ENUM_CONSTANT(INSTANCE_FLAG_REDRAW_FRAME_IF_VISIBLE);
+	BIND_ENUM_CONSTANT(INSTANCE_FLAG_DRAW_NEXT_FRAME_IF_VISIBLE);
 	BIND_ENUM_CONSTANT(INSTANCE_FLAG_MAX);
 
 	BIND_ENUM_CONSTANT(SHADOW_CASTING_SETTING_OFF);
@@ -2355,6 +2361,7 @@ VisualServer::VisualServer() {
 	//ERR_FAIL_COND(singleton);
 	singleton = this;
 
+	GLOBAL_DEF("rendering/vram_compression/import_bptc", false);
 	GLOBAL_DEF("rendering/vram_compression/import_s3tc", true);
 	GLOBAL_DEF("rendering/vram_compression/import_etc", false);
 	GLOBAL_DEF("rendering/vram_compression/import_etc2", true);

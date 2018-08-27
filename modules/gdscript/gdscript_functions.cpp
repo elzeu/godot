@@ -642,7 +642,6 @@ void GDScriptFunctions::call(Function p_func, const Variant **p_args, int p_arg_
 				str += p_args[i]->operator String();
 			}
 
-			//str+="\n";
 			print_line(str);
 			r_ret = Variant();
 
@@ -657,7 +656,6 @@ void GDScriptFunctions::call(Function p_func, const Variant **p_args, int p_arg_
 				str += p_args[i]->operator String();
 			}
 
-			//str+="\n";
 			print_line(str);
 			r_ret = Variant();
 
@@ -672,7 +670,6 @@ void GDScriptFunctions::call(Function p_func, const Variant **p_args, int p_arg_
 				str += p_args[i]->operator String();
 			}
 
-			//str+="\n";
 			print_line(str);
 			r_ret = Variant();
 
@@ -686,7 +683,6 @@ void GDScriptFunctions::call(Function p_func, const Variant **p_args, int p_arg_
 				str += p_args[i]->operator String();
 			}
 
-			//str+="\n";
 			print_error(str);
 			r_ret = Variant();
 
@@ -698,7 +694,6 @@ void GDScriptFunctions::call(Function p_func, const Variant **p_args, int p_arg_
 				str += p_args[i]->operator String();
 			}
 
-			//str+="\n";
 			OS::get_singleton()->print("%s", str.utf8().get_data());
 			r_ret = Variant();
 
@@ -716,7 +711,6 @@ void GDScriptFunctions::call(Function p_func, const Variant **p_args, int p_arg_
 				str += "At: " + script->debug_get_stack_level_source(0) + ":" + itos(script->debug_get_stack_level_line(0)); // + " in function '" + script->debug_get_stack_level_function(0) + "'";
 			}
 
-			//str+="\n";
 			print_line(str);
 			r_ret = Variant();
 		} break;
@@ -1098,7 +1092,7 @@ void GDScriptFunctions::call(Function p_func, const Variant **p_args, int p_arg_
 
 			for (Map<StringName, GDScript::MemberInfo>::Element *E = gd_ref->member_indices.front(); E; E = E->next()) {
 				if (d.has(E->key())) {
-					ins->members[E->get().index] = d[E->key()];
+					ins->members.write[E->get().index] = d[E->key()];
 				}
 			}
 
@@ -1412,7 +1406,7 @@ bool GDScriptFunctions::is_deterministic(Function p_func) {
 
 MethodInfo GDScriptFunctions::get_info(Function p_func) {
 
-#ifdef TOOLS_ENABLED
+#ifdef DEBUG_ENABLED
 	//using a switch, so the compiler generates a jumptable
 
 	switch (p_func) {

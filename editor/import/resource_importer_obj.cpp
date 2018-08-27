@@ -63,7 +63,7 @@ static Error _parse_material_library(const String &p_path, Map<String, Ref<Spati
 			material_map[current_name] = current;
 		} else if (l.begins_with("Ka ")) {
 			//uv
-			print_line("Warning: Ambient light for material '" + current_name + "' is ignored in PBR");
+			WARN_PRINTS("OBJ: Ambient light for material '" + current_name + "' is ignored in PBR");
 
 		} else if (l.begins_with("Kd ")) {
 			//normal
@@ -119,7 +119,7 @@ static Error _parse_material_library(const String &p_path, Map<String, Ref<Spati
 
 		} else if (l.begins_with("map_Ka ")) {
 			//uv
-			print_line("Warning: Ambient light texture for material '" + current_name + "' is ignored in PBR");
+			WARN_PRINTS("OBJ: Ambient light texture for material '" + current_name + "' is ignored in PBR");
 
 		} else if (l.begins_with("map_Kd ")) {
 			//normal
@@ -224,6 +224,13 @@ static Error _parse_obj(const String &p_path, List<Ref<Mesh> > &r_meshes, bool p
 	while (true) {
 
 		String l = f->get_line().strip_edges();
+		while (l.length() && l[l.length() - 1] == '\\') {
+			String add = f->get_line().strip_edges();
+			l += add;
+			if (add == String()) {
+				break;
+			}
+		}
 
 		if (l.begins_with("v ")) {
 			//vertex
@@ -264,10 +271,12 @@ static Error _parse_obj(const String &p_path, List<Ref<Mesh> > &r_meshes, bool p
 			face[0] = v[1].split("/");
 			face[1] = v[2].split("/");
 			ERR_FAIL_COND_V(face[0].size() == 0, ERR_FILE_CORRUPT);
+
 			ERR_FAIL_COND_V(face[0].size() != face[1].size(), ERR_FILE_CORRUPT);
 			for (int i = 2; i < v.size() - 1; i++) {
 
 				face[2] = v[i + 1].split("/");
+
 				ERR_FAIL_COND_V(face[0].size() != face[2].size(), ERR_FILE_CORRUPT);
 				for (int j = 0; j < 3; j++) {
 
@@ -326,8 +335,8 @@ static Error _parse_obj(const String &p_path, List<Ref<Mesh> > &r_meshes, bool p
 
 				surf_tool->index();
 
-				print_line("current material library " + current_material_library + " has " + itos(material_map.has(current_material_library)));
-				print_line("current material " + current_material + " has " + itos(material_map.has(current_material_library) && material_map[current_material_library].has(current_material)));
+				print_verbose("OBJ: Current material library " + current_material_library + " has " + itos(material_map.has(current_material_library)));
+				print_verbose("OBJ: Current material " + current_material + " has " + itos(material_map.has(current_material_library) && material_map[current_material_library].has(current_material)));
 
 				if (material_map.has(current_material_library) && material_map[current_material_library].has(current_material)) {
 					surf_tool->set_material(material_map[current_material_library][current_material]);
@@ -341,7 +350,7 @@ static Error _parse_obj(const String &p_path, List<Ref<Mesh> > &r_meshes, bool p
 					mesh->surface_set_name(mesh->get_surface_count() - 1, current_group);
 				}
 
-				print_line("Added surface :" + mesh->surface_get_name(mesh->get_surface_count() - 1));
+				print_verbose("OBJ: Added surface :" + mesh->surface_get_name(mesh->get_surface_count() - 1));
 				surf_tool->clear();
 				surf_tool->begin(Mesh::PRIMITIVE_TRIANGLES);
 			}

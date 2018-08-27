@@ -173,9 +173,9 @@ void editor_register_and_generate_icons(Ref<Theme> p_theme, bool p_dark_theme = 
 	const Color error_color = p_theme->get_color("error_color", "Editor");
 	const Color success_color = p_theme->get_color("success_color", "Editor");
 	const Color warning_color = p_theme->get_color("warning_color", "Editor");
-	dark_icon_color_dictionary[Color::html("#ff5d5d")] = error_color;
+	dark_icon_color_dictionary[Color::html("#ff0000")] = error_color;
 	dark_icon_color_dictionary[Color::html("#45ff8b")] = success_color;
-	dark_icon_color_dictionary[Color::html("#ffdd65")] = warning_color;
+	dark_icon_color_dictionary[Color::html("#dbab09")] = warning_color;
 
 	List<String> exceptions;
 	exceptions.push_back("EditorPivot");
@@ -237,10 +237,8 @@ void editor_register_and_generate_icons(Ref<Theme> p_theme, bool p_dark_theme = 
 	ImageLoaderSVG::set_convert_colors(NULL);
 
 	clock_t end_time = clock();
-
-	double time_d = (double)(end_time - begin_time) / CLOCKS_PER_SEC;
 #else
-	print_line("Sorry no icons for you");
+	print_line("SVG support disabled, editor icons won't be rendered.");
 #endif
 }
 
@@ -257,7 +255,6 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 
 	String preset = EDITOR_DEF("interface/theme/preset", "Default");
 
-	int icon_font_color_setting = EDITOR_DEF("interface/theme/icon_and_font_color", 0);
 	bool highlight_tabs = EDITOR_DEF("interface/theme/highlight_tabs", false);
 	int border_size = EDITOR_DEF("interface/theme/border_size", 1);
 
@@ -368,11 +365,13 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 	theme->set_color("mono_color", "Editor", mono_color);
 
 	Color success_color = accent_color.linear_interpolate(Color(0.2, 1, 0.2), 0.6) * 1.2;
-	Color warning_color = accent_color.linear_interpolate(Color(1, 1, 0), 0.7) * 1.2;
+	Color warning_color = accent_color.linear_interpolate(Color(1, 1, 0), 0.7) * 1.0;
 	Color error_color = accent_color.linear_interpolate(Color(1, 0, 0), 0.8) * 1.7;
+	Color property_color = font_color.linear_interpolate(Color(0.5, 0.5, 0.5), 0.5);
+
 	if (!dark_theme) {
 		// yellow on white themes is a P.I.T.A.
-		warning_color = accent_color.linear_interpolate(Color(1, 0.8, 0), 0.9);
+		warning_color = accent_color.linear_interpolate(Color(0.9, 0.7, 0), 0.9);
 		warning_color = warning_color.linear_interpolate(mono_color, 0.2);
 		success_color = success_color.linear_interpolate(mono_color, 0.2);
 		error_color = error_color.linear_interpolate(mono_color, 0.2);
@@ -380,12 +379,7 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 	theme->set_color("success_color", "Editor", success_color);
 	theme->set_color("warning_color", "Editor", warning_color);
 	theme->set_color("error_color", "Editor", error_color);
-
-	// 2d grid color
-	const Color grid_minor_color = mono_color * Color(1.0, 1.0, 1.0, 0.07);
-	const Color grid_major_color = Color(font_color_disabled.r, font_color_disabled.g, font_color_disabled.b, 0.15);
-	theme->set_color("grid_major_color", "Editor", grid_major_color);
-	theme->set_color("grid_minor_color", "Editor", grid_minor_color);
+	theme->set_color("property_color", "Editor", property_color);
 
 	const int thumb_size = EDITOR_DEF("filesystem/file_dialog/thumbnail_size", 64);
 	theme->set_constant("scale", "Editor", EDSCALE);
@@ -828,6 +822,8 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 	theme->set_color("font_color", "LineEdit", font_color);
 	theme->set_color("cursor_color", "LineEdit", font_color);
 	theme->set_color("selection_color", "LineEdit", font_color_selection);
+	theme->set_color("clear_button_color", "LineEdit", font_color);
+	theme->set_color("clear_button_color_pressed", "LineEdit", accent_color);
 
 	// TextEdit
 	theme->set_stylebox("normal", "TextEdit", style_widget);
@@ -969,8 +965,8 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 
 	// GraphEdit
 	theme->set_stylebox("bg", "GraphEdit", style_tree_bg);
-	theme->set_color("grid_major", "GraphEdit", grid_major_color);
-	theme->set_color("grid_minor", "GraphEdit", grid_minor_color);
+	theme->set_color("grid_major", "GraphEdit", Color(1.0, 1.0, 1.0, 0.15));
+	theme->set_color("grid_minor", "GraphEdit", Color(1.0, 1.0, 1.0, 0.07));
 	theme->set_color("activity", "GraphEdit", accent_color);
 	theme->set_icon("minus", "GraphEdit", theme->get_icon("ZoomLess", "EditorIcons"));
 	theme->set_icon("more", "GraphEdit", theme->get_icon("ZoomMore", "EditorIcons"));
