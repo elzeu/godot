@@ -1558,8 +1558,6 @@ void EditorNode::_edit_current() {
 
 				editor_plugin_screen->edit(current_obj);
 			}
-		} else {
-			editor_plugin_screen->edit(current_obj);
 		}
 
 		Vector<EditorPlugin *> sub_plugins = editor_data.get_subeditors(current_obj);
@@ -2758,6 +2756,8 @@ void EditorNode::set_current_scene(int p_idx) {
 
 	Dictionary state = editor_data.restore_edited_scene_state(editor_selection, &editor_history);
 	_edit_current();
+
+	_update_title();
 
 	call_deferred("_set_main_scene_state", state, get_edited_scene()); //do after everything else is done setting up
 }
@@ -5645,10 +5645,6 @@ EditorNode::EditorNode() {
 	add_editor_plugin(memnew(SkeletonEditorPlugin(this)));
 	add_editor_plugin(memnew(SkeletonIKEditorPlugin(this)));
 	add_editor_plugin(memnew(PhysicalBonePlugin(this)));
-
-	// FIXME: Disabled as (according to reduz) users were complaining that it gets in the way
-	// Waiting for PropertyEditor rewrite (planned for 3.1) to be refactored.
-	//add_editor_plugin(memnew(MaterialEditorPlugin(this)));
 
 	for (int i = 0; i < EditorPlugins::get_plugin_count(); i++)
 		add_editor_plugin(EditorPlugins::create(i, this));
