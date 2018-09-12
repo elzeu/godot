@@ -30,15 +30,15 @@
 
 #include "canvas_item_editor_plugin.h"
 
+#include "core/os/input.h"
+#include "core/os/keyboard.h"
+#include "core/print_string.h"
+#include "core/project_settings.h"
 #include "editor/editor_node.h"
 #include "editor/editor_settings.h"
 #include "editor/plugins/animation_player_editor_plugin.h"
 #include "editor/plugins/script_editor_plugin.h"
 #include "editor/script_editor_debugger.h"
-#include "os/input.h"
-#include "os/keyboard.h"
-#include "print_string.h"
-#include "project_settings.h"
 #include "scene/2d/light_2d.h"
 #include "scene/2d/particles_2d.h"
 #include "scene/2d/polygon_2d.h"
@@ -1858,22 +1858,9 @@ bool CanvasItemEditor::_gui_input_select(const Ref<InputEvent> &p_event) {
 			// Retrieve the bones
 			_get_bones_at_pos(click, selection);
 
-			for (int i = 0; i < selection.size(); i++) {
-				if (editor_selection->is_selected(selection[i].item)) {
-					// Drag the node(s) if requested
-					List<CanvasItem *> selection = _get_edited_canvas_items();
-
-					drag_type = DRAG_MOVE;
-					drag_selection = selection;
-					drag_from = click;
-					_save_canvas_item_state(drag_selection);
-
-					return true;
-				}
-			}
-
-			if (!selection.empty())
+			if (!selection.empty()) {
 				canvas_item = selection[0].item;
+			}
 
 			if (!canvas_item) {
 				// Start a box selection

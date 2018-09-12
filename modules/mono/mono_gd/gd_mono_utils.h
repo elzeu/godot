@@ -38,8 +38,8 @@
 #include "../utils/thread_local.h"
 #include "gd_mono_header.h"
 
-#include "object.h"
-#include "reference.h"
+#include "core/object.h"
+#include "core/reference.h"
 
 #define UNLIKELY_UNHANDLED_EXCEPTION(m_exc)            \
 	if (unlikely(m_exc != NULL)) {                     \
@@ -49,6 +49,7 @@
 
 namespace GDMonoUtils {
 
+typedef void (*GodotObject_Dispose)(MonoObject *, MonoObject **);
 typedef Array *(*Array_GetPtr)(MonoObject *, MonoObject **);
 typedef Dictionary *(*Dictionary_GetPtr)(MonoObject *, MonoObject **);
 typedef MonoObject *(*SignalAwaiter_SignalCallback)(MonoObject *, MonoArray *, MonoObject **);
@@ -141,6 +142,7 @@ struct MonoCache {
 	GDMonoField *field_Image_ptr;
 	GDMonoField *field_RID_ptr;
 
+	GodotObject_Dispose methodthunk_GodotObject_Dispose;
 	Array_GetPtr methodthunk_Array_GetPtr;
 	Dictionary_GetPtr methodthunk_Dictionary_GetPtr;
 	IsArrayGenericType methodthunk_MarshalUtils_IsArrayGenericType;
