@@ -1905,11 +1905,7 @@ bool CanvasItemEditor::_gui_input_select(const Ref<InputEvent> &p_event) {
 				for (int i = 0; i < selection_results.size(); i++) {
 					CanvasItem *item = selection_results[i].item;
 
-					Ref<Texture> icon;
-					if (item->has_meta("_editor_icon"))
-						icon = item->get_meta("_editor_icon");
-					else
-						icon = get_icon(has_icon(item->get_class(), "EditorIcons") ? item->get_class() : String("Object"), "EditorIcons");
+					Ref<Texture> icon = EditorNode::get_singleton()->get_object_icon(item, "Node");
 					String node_path = "/" + root_name + "/" + root_path.rel_path_to(item->get_path());
 
 					selection_menu->add_item(item->get_name());
@@ -2046,10 +2042,7 @@ bool CanvasItemEditor::_gui_input_hover(const Ref<InputEvent> &p_event) {
 
 			_HoverResult hover_result;
 			hover_result.position = canvas_item->get_global_transform_with_canvas().get_origin();
-			if (has_icon(canvas_item->get_class(), "EditorIcons"))
-				hover_result.icon = get_icon(canvas_item->get_class(), "EditorIcons");
-			else
-				hover_result.icon = get_icon("Object", "EditorIcons");
+			hover_result.icon = EditorNode::get_singleton()->get_object_icon(canvas_item);
 			hover_result.name = canvas_item->get_name();
 
 			hovering_results_tmp.push_back(hover_result);
@@ -2898,7 +2891,7 @@ void CanvasItemEditor::_draw_hover() {
 		Size2 item_size = Size2(node_icon->get_size().x + 4 + node_name_size.x, MAX(node_icon->get_size().y, node_name_size.y - 3));
 
 		Point2 pos = transform.xform(hovering_results[i].position) - Point2(0, item_size.y) + (Point2(node_icon->get_size().x, -node_icon->get_size().y) / 4);
-		// Rectify the position to avoid overlaping items
+		// Rectify the position to avoid overlapping items
 		for (List<Rect2>::Element *E = previous_rects.front(); E; E = E->next()) {
 			if (E->get().intersects(Rect2(pos, item_size))) {
 				pos.y = E->get().get_position().y - item_size.y;
@@ -4397,7 +4390,7 @@ CanvasItemEditor::CanvasItemEditor(EditorNode *p_editor) {
 	zoom_plus = memnew(ToolButton);
 	zoom_hb->add_child(zoom_plus);
 	zoom_plus->connect("pressed", this, "_button_zoom_plus");
-	zoom_plus->set_shortcut(ED_SHORTCUT("canvas_item_editor/zoom_plus", TTR("Zoom in"), KEY_MASK_CMD | KEY_PLUS));
+	zoom_plus->set_shortcut(ED_SHORTCUT("canvas_item_editor/zoom_plus", TTR("Zoom in"), KEY_MASK_CMD | KEY_EQUAL)); // Usually direct access key for PLUS
 	zoom_plus->set_focus_mode(FOCUS_NONE);
 
 	updating_scroll = false;

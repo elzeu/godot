@@ -77,18 +77,19 @@ Error ScriptDebuggerRemote::connect_to_host(const String &p_host, uint16_t p_por
 	for (int i = 0; i < tries; i++) {
 
 		if (tcp_client->get_status() == StreamPeerTCP::STATUS_CONNECTED) {
+			print_verbose("Remote Debugger: Connected!");
 			break;
 		} else {
 
 			const int ms = waits[i];
 			OS::get_singleton()->delay_usec(ms * 1000);
-			ERR_PRINTS("Remote Debugger: Connection failed with status: '" + String::num(tcp_client->get_status()) + "', retrying in " + String::num(ms) + " msec.");
+			print_verbose("Remote Debugger: Connection failed with status: '" + String::num(tcp_client->get_status()) + "', retrying in " + String::num(ms) + " msec.");
 		};
 	};
 
 	if (tcp_client->get_status() != StreamPeerTCP::STATUS_CONNECTED) {
 
-		ERR_PRINTS("Remote Debugger: Unable to connect.");
+		ERR_PRINTS("Remote Debugger: Unable to connect. Status: " + String::num(tcp_client->get_status()));
 		return FAILED;
 	};
 
@@ -1084,7 +1085,7 @@ ScriptDebuggerRemote::ScriptDebuggerRemote() :
 		max_frame_functions(16),
 		skip_profile_frame(false),
 		reload_all_scripts(false),
-		tcp_client(StreamPeerTCP::create_ref()),
+		tcp_client(Ref<StreamPeerTCP>(memnew(StreamPeerTCP))),
 		packet_peer_stream(Ref<PacketPeerStream>(memnew(PacketPeerStream))),
 		last_perf_time(0),
 		performance(Engine::get_singleton()->get_singleton_object("Performance")),

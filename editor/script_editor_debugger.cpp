@@ -428,8 +428,9 @@ void ScriptEditorDebugger::_parse_message(const String &p_msg, const Array &p_da
 			ObjectID id = ObjectID(p_data[i + 3]);
 
 			it->set_text(0, p_data[i + 1]);
-			if (has_icon(p_data[i + 2], "EditorIcons"))
-				it->set_icon(0, get_icon(p_data[i + 2], "EditorIcons"));
+			Ref<Texture> icon = EditorNode::get_singleton()->get_class_icon(p_data[i + 2], "");
+			if (icon.is_valid())
+				it->set_icon(0, icon);
 			it->set_metadata(0, id);
 
 			if (id == inspected_object_id) {
@@ -1717,6 +1718,32 @@ void ScriptEditorDebugger::_error_selected() {
 	emit_signal("goto_script_line", s, int(meta[1]) - 1);
 }
 
+void ScriptEditorDebugger::_expand_errors_list() {
+
+	TreeItem *root = error_tree->get_root();
+	if (!root)
+		return;
+
+	TreeItem *item = root->get_children();
+	while (item) {
+		item->set_collapsed(false);
+		item = item->get_next();
+	}
+}
+
+void ScriptEditorDebugger::_collapse_errors_list() {
+
+	TreeItem *root = error_tree->get_root();
+	if (!root)
+		return;
+
+	TreeItem *item = root->get_children();
+	while (item) {
+		item->set_collapsed(true);
+		item = item->get_next();
+	}
+}
+
 void ScriptEditorDebugger::set_hide_on_stop(bool p_hide) {
 
 	hide_on_stop = p_hide;
@@ -1861,6 +1888,8 @@ void ScriptEditorDebugger::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("_error_selected"), &ScriptEditorDebugger::_error_selected);
 	ClassDB::bind_method(D_METHOD("_error_activated"), &ScriptEditorDebugger::_error_activated);
+	ClassDB::bind_method(D_METHOD("_expand_errors_list"), &ScriptEditorDebugger::_expand_errors_list);
+	ClassDB::bind_method(D_METHOD("_collapse_errors_list"), &ScriptEditorDebugger::_collapse_errors_list);
 	ClassDB::bind_method(D_METHOD("_profiler_activate"), &ScriptEditorDebugger::_profiler_activate);
 	ClassDB::bind_method(D_METHOD("_profiler_seeked"), &ScriptEditorDebugger::_profiler_seeked);
 	ClassDB::bind_method(D_METHOD("_clear_errors_list"), &ScriptEditorDebugger::_clear_errors_list);
@@ -1987,7 +2016,7 @@ ScriptEditorDebugger::ScriptEditorDebugger(EditorNode *p_editor) {
 		inspector->connect("object_id_selected", this, "_scene_tree_property_select_object");
 		sc->add_child(inspector);
 
-		server = TCP_Server::create_ref();
+		server.instance();
 
 		pending_in_queue = 0;
 
@@ -1999,8 +2028,31 @@ ScriptEditorDebugger::ScriptEditorDebugger(EditorNode *p_editor) {
 	}
 
 	{ //errors
+		VBoxContainer *errvb = memnew(VBoxContainer);
+		errvb->set_name(TTR("Errors"));
+
 		HBoxContainer *errhb = memnew(HBoxContainer);
-		errhb->set_name(TTR("Errors"));
+		errvb->add_child(errhb);
+
+		Button *expand_all = memnew(Button);
+		expand_all->set_text(TTR("Expand All"));
+		expand_all->connect("pressed", this, "_expand_errors_list");
+		errhb->add_child(expand_all);
+
+		Button *collapse_all = memnew(Button);
+		collapse_all->set_text(TTR("Collapse All"));
+		collapse_all->connect("pressed", this, "_collapse_errors_list");
+		errhb->add_child(collapse_all);
+
+		Control *space = memnew(Control);
+		space->set_h_size_flags(SIZE_EXPAND_FILL);
+		errhb->add_child(space);
+
+		clearbutton = memnew(Button);
+		clearbutton->set_text(TTR("Clear"));
+		clearbutton->set_h_size_flags(0);
+		clearbutton->connect("pressed", this, "_clear_errors_list");
+		errhb->add_child(clearbutton);
 
 		error_tree = memnew(Tree);
 		error_tree->set_columns(2);
@@ -2012,22 +2064,16 @@ ScriptEditorDebugger::ScriptEditorDebugger(EditorNode *p_editor) {
 
 		error_tree->set_select_mode(Tree::SELECT_ROW);
 		error_tree->set_hide_root(true);
-		error_tree->set_h_size_flags(SIZE_EXPAND_FILL);
+		error_tree->set_v_size_flags(SIZE_EXPAND_FILL);
 		error_tree->set_allow_rmb_select(true);
 		error_tree->connect("item_rmb_selected", this, "_error_tree_item_rmb_selected");
-		errhb->add_child(error_tree);
+		errvb->add_child(error_tree);
 
 		item_menu = memnew(PopupMenu);
 		item_menu->connect("id_pressed", this, "_item_menu_id_pressed");
 		error_tree->add_child(item_menu);
 
-		clearbutton = memnew(Button);
-		clearbutton->set_text(TTR("Clear"));
-		clearbutton->set_v_size_flags(0);
-		clearbutton->connect("pressed", this, "_clear_errors_list");
-		errhb->add_child(clearbutton);
-
-		tabs->add_child(errhb);
+		tabs->add_child(errvb);
 	}
 
 	{ // remote scene tree

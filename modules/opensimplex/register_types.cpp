@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  packet_peer_udp_posix.h                                              */
+/*  register_types.cpp                                                   */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,61 +28,15 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef PACKET_PEER_UDP_POSIX_H
-#define PACKET_PEER_UDP_POSIX_H
+#include "register_types.h"
+#include "noise_texture.h"
+#include "simplex_noise.h"
 
-#ifdef UNIX_ENABLED
+void register_opensimplex_types() {
 
-#include "core/io/packet_peer_udp.h"
-#include "core/ring_buffer.h"
+	ClassDB::register_class<SimplexNoise>();
+	ClassDB::register_class<NoiseTexture>();
+}
 
-class PacketPeerUDPPosix : public PacketPeerUDP {
-
-	enum {
-		PACKET_BUFFER_SIZE = 65536
-	};
-
-	RingBuffer<uint8_t> rb;
-	uint8_t recv_buffer[PACKET_BUFFER_SIZE];
-	uint8_t packet_buffer[PACKET_BUFFER_SIZE];
-	IP_Address packet_ip;
-	int packet_port;
-	int queue_count;
-	int sockfd;
-	bool sock_blocking;
-	IP::Type sock_type;
-
-	IP_Address peer_addr;
-	int peer_port;
-
-	_FORCE_INLINE_ int _get_socket();
-
-	static PacketPeerUDP *_create();
-	void _set_sock_blocking(bool p_blocking);
-	virtual Error _poll(bool p_block);
-
-public:
-	virtual int get_available_packet_count() const;
-	virtual Error get_packet(const uint8_t **r_buffer, int &r_buffer_size);
-	virtual Error put_packet(const uint8_t *p_buffer, int p_buffer_size);
-
-	virtual int get_max_packet_size() const;
-
-	virtual Error listen(int p_port, const IP_Address &p_bind_address = IP_Address("*"), int p_recv_buffer_size = 65536);
-	virtual void close();
-	virtual Error wait();
-	virtual bool is_listening() const;
-
-	virtual IP_Address get_packet_address() const;
-	virtual int get_packet_port() const;
-
-	virtual void set_dest_address(const IP_Address &p_address, int p_port);
-
-	static void make_default();
-
-	PacketPeerUDPPosix();
-	~PacketPeerUDPPosix();
-};
-
-#endif // PACKET_PEER_UDP_POSIX_H
-#endif
+void unregister_opensimplex_types() {
+}

@@ -141,12 +141,7 @@ void EditorNode::_update_scene_tabs() {
 		String type = editor_data.get_scene_type(i);
 		Ref<Texture> icon;
 		if (type != String()) {
-
-			if (!gui_base->has_icon(type, "EditorIcons")) {
-				type = "Node";
-			}
-
-			icon = gui_base->get_icon(type, "EditorIcons");
+			icon = get_class_icon(type, "Node");
 		}
 
 		int current = editor_data.get_edited_scene();
@@ -3126,6 +3121,86 @@ void EditorNode::stop_child_process() {
 	_menu_option_confirm(RUN_STOP, false);
 }
 
+Ref<Texture> EditorNode::get_object_icon(const Object *p_object, const String &p_fallback) const {
+	ERR_FAIL_COND_V(!p_object || !gui_base, NULL);
+
+	Ref<Script> script = p_object->get_script();
+	if (script.is_null() && p_object->is_class("Script")) {
+		script = p_object;
+	}
+
+	StringName name;
+	String icon_path;
+	if (script.is_valid()) {
+		name = EditorNode::get_editor_data().script_class_get_name(script->get_path());
+		icon_path = EditorNode::get_editor_data().script_class_get_icon_path(name);
+		name = script->get_instance_base_type();
+	}
+
+	if (gui_base->has_icon(p_object->get_class(), "EditorIcons"))
+		return gui_base->get_icon(p_object->get_class(), "EditorIcons");
+
+	if (icon_path.length())
+		return ResourceLoader::load(icon_path);
+
+	if (p_object->has_meta("_editor_icon"))
+		return p_object->get_meta("_editor_icon");
+
+	if (name != StringName()) {
+		const Map<String, Vector<EditorData::CustomType> > &p_map = EditorNode::get_editor_data().get_custom_types();
+		for (const Map<String, Vector<EditorData::CustomType> >::Element *E = p_map.front(); E; E = E->next()) {
+			const Vector<EditorData::CustomType> &ct = E->value();
+			for (int i = 0; i < ct.size(); ++i) {
+				if (ct[i].name == name && ct[i].icon.is_valid()) {
+					return ct[i].icon;
+				}
+			}
+		}
+	}
+
+	if (p_fallback.length())
+		return gui_base->get_icon(p_fallback, "EditorIcons");
+
+	return NULL;
+}
+
+Ref<Texture> EditorNode::get_class_icon(const String &p_class, const String &p_fallback) const {
+	ERR_FAIL_COND_V(p_class.empty(), NULL);
+
+	if (gui_base->has_icon(p_class, "EditorIcons")) {
+		return gui_base->get_icon(p_class, "EditorIcons");
+	}
+
+	if (ScriptServer::is_global_class(p_class)) {
+		String icon_path = EditorNode::get_editor_data().script_class_get_icon_path(p_class);
+		RES icon;
+		if (FileAccess::exists(icon_path)) {
+			icon = ResourceLoader::load(icon_path);
+		}
+		if (!icon.is_valid()) {
+			icon = gui_base->get_icon(ScriptServer::get_global_class_base(p_class), "EditorIcons");
+		}
+		return icon;
+	}
+
+	const Map<String, Vector<EditorData::CustomType> > &p_map = EditorNode::get_editor_data().get_custom_types();
+	for (const Map<String, Vector<EditorData::CustomType> >::Element *E = p_map.front(); E; E = E->next()) {
+		const Vector<EditorData::CustomType> &ct = E->value();
+		for (int i = 0; i < ct.size(); ++i) {
+			if (ct[i].name == p_class) {
+				if (ct[i].icon.is_valid()) {
+					return ct[i].icon;
+				}
+			}
+		}
+	}
+
+	if (p_fallback.length())
+		return gui_base->get_icon(p_fallback, "EditorIcons");
+
+	return NULL;
+}
+
 void EditorNode::progress_add_task(const String &p_task, const String &p_label, int p_steps, bool p_can_cancel) {
 
 	singleton->progress_dialog->add_task(p_task, p_label, p_steps, p_can_cancel);
@@ -3589,7 +3664,7 @@ void EditorNode::_update_dock_slots_visibility() {
 
 void EditorNode::_dock_tab_changed(int p_tab) {
 
-	// update visibility but dont set current tab
+	// update visibility but don't set current tab
 	VSplitContainer *splits[DOCK_SLOT_MAX / 2] = {
 		left_l_vsplit,
 		left_r_vsplit,
@@ -4607,7 +4682,7 @@ EditorNode::EditorNode() {
 	Physics2DServer::get_singleton()->set_active(false); // no physics by default if editor
 	ScriptServer::set_scripting_enabled(false); // no scripting by default if editor
 
-	EditorHelp::generate_doc(); //before any editor classes are crated
+	EditorHelp::generate_doc(); //before any editor classes are created
 	SceneState::set_disable_placeholders(true);
 	ResourceLoader::clear_translation_remaps(); //no remaps using during editor
 	ResourceLoader::clear_path_remaps();
@@ -5358,22 +5433,20 @@ EditorNode::EditorNode() {
 	play_custom_scene_button->set_shortcut(ED_SHORTCUT("editor/play_custom_scene", TTR("Play Custom Scene"), KEY_MASK_CMD | KEY_MASK_SHIFT | KEY_F5));
 #endif
 
+	// Toggle for video driver
 	video_driver = memnew(OptionButton);
 	video_driver->set_flat(true);
 	video_driver->set_focus_mode(Control::FOCUS_NONE);
 	video_driver->set_v_size_flags(Control::SIZE_SHRINK_CENTER);
+	video_driver->connect("item_selected", this, "_video_driver_selected");
+	menu_hb->add_child(video_driver);
+
 	String video_drivers = ProjectSettings::get_singleton()->get_custom_property_info()["rendering/quality/driver/driver_name"].hint_string;
 	String current_video_driver = OS::get_singleton()->get_video_driver_name(OS::get_singleton()->get_current_video_driver());
-	menu_hb->add_child(video_driver);
 	video_driver_current = 0;
 	for (int i = 0; i < video_drivers.get_slice_count(","); i++) {
 		String driver = video_drivers.get_slice(",", i);
-		if (gui_base->has_icon(driver, "EditorIcons")) {
-			video_driver->add_icon_item(gui_base->get_icon(driver, "EditorIcons"), "");
-		} else {
-			video_driver->add_item(driver);
-		}
-
+		video_driver->add_item(driver);
 		video_driver->set_item_metadata(i, driver);
 
 		if (current_video_driver == driver) {
@@ -5382,7 +5455,6 @@ EditorNode::EditorNode() {
 		}
 	}
 
-	video_driver->connect("item_selected", this, "_video_driver_selected");
 	video_restart_dialog = memnew(ConfirmationDialog);
 	video_restart_dialog->set_text(TTR("Changing the video driver requires restarting the editor."));
 	video_restart_dialog->get_ok()->set_text(TTR("Save & Restart"));
@@ -5788,7 +5860,7 @@ EditorNode::EditorNode() {
 #else
 	ED_SHORTCUT("editor/editor_2d", TTR("Open 2D Editor"), KEY_F1);
 	ED_SHORTCUT("editor/editor_3d", TTR("Open 3D Editor"), KEY_F2);
-	ED_SHORTCUT("editor/editor_script", TTR("Open Script Editor"), KEY_F3); //hack neded for script editor F3 search to work :) Assign like this or don't use F3
+	ED_SHORTCUT("editor/editor_script", TTR("Open Script Editor"), KEY_F3); //hack needed for script editor F3 search to work :) Assign like this or don't use F3
 	ED_SHORTCUT("editor/editor_help", TTR("Search Help"), KEY_F4);
 #endif
 	ED_SHORTCUT("editor/editor_assetlib", TTR("Open Asset Library"));

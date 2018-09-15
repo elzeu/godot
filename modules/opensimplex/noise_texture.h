@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  stream_peer_tcp_winsock.h                                            */
+/*  noise_texture.h                                                      */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,65 +28,77 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifdef WINDOWS_ENABLED
+#ifndef NOISE_TEXTURE_H
+#define NOISE_TEXTURE_H
 
-#ifndef STREAM_PEER_TCP_WINSOCK_H
-#define STREAM_PEER_TCP_WINSOCK_H
+#include "simplex_noise.h"
 
-#include "core/error_list.h"
+#include "core/image.h"
+#include "core/reference.h"
+#include "editor/editor_node.h"
+#include "editor/editor_plugin.h"
+#include "editor/property_editor.h"
 
-#include "core/io/ip_address.h"
-#include "core/io/stream_peer_tcp.h"
+class NoiseTexture : public Texture {
+	GDCLASS(NoiseTexture, Texture)
 
-class StreamPeerTCPWinsock : public StreamPeerTCP {
+private:
+	Ref<Image> data;
+
+	Thread *noise_thread;
+
+	bool first_time;
+	bool update_queued;
+	bool regen_queued;
+
+	RID texture;
+	uint32_t flags;
+
+	Ref<SimplexNoise> noise;
+	Vector2i size;
+	bool seamless;
+	bool as_normalmap;
+
+	void _thread_done(const Ref<Image> &p_image);
+	static void _thread_function(void *p_ud);
+
+	void _queue_update();
+	Ref<Image> _generate_texture();
+	void _update_texture();
+	void _set_texture_data(const Ref<Image> &p_image);
 
 protected:
-	mutable Status status;
-	IP::Type sock_type;
-
-	int sockfd;
-
-	Error _block(int p_sockfd, bool p_read, bool p_write) const;
-
-	Error _poll_connection() const;
-
-	IP_Address peer_host;
-	int peer_port;
-
-	Error write(const uint8_t *p_data, int p_bytes, int &r_sent, bool p_block);
-	Error read(uint8_t *p_buffer, int p_bytes, int &r_received, bool p_block);
-
-	static StreamPeerTCP *_create();
+	static void _bind_methods();
 
 public:
-	virtual Error connect_to_host(const IP_Address &p_host, uint16_t p_port);
+	void set_noise(Ref<SimplexNoise> p_noise);
+	Ref<SimplexNoise> get_noise();
 
-	virtual Error put_data(const uint8_t *p_data, int p_bytes);
-	virtual Error put_partial_data(const uint8_t *p_data, int p_bytes, int &r_sent);
+	void set_width(int p_width);
+	void set_height(int p_hieght);
 
-	virtual Error get_data(uint8_t *p_buffer, int p_bytes);
-	virtual Error get_partial_data(uint8_t *p_buffer, int p_bytes, int &r_received);
+	void set_seamless(bool p_seamless);
+	bool get_seamless();
 
-	virtual int get_available_bytes() const;
+	void set_as_normalmap(bool p_seamless);
+	bool is_normalmap();
 
-	void set_socket(int p_sockfd, IP_Address p_host, int p_port, IP::Type p_sock_type);
+	void set_size(Vector2 p_size);
+	Vector2 get_size();
 
-	virtual IP_Address get_connected_host() const;
-	virtual uint16_t get_connected_port() const;
+	int get_width() const;
+	int get_height() const;
 
-	virtual bool is_connected_to_host() const;
-	virtual Status get_status() const;
-	virtual void disconnect_from_host();
+	virtual void set_flags(uint32_t p_flags);
+	virtual uint32_t get_flags() const;
 
-	static void make_default();
-	static void cleanup();
+	virtual RID get_rid() const { return texture; }
+	virtual bool has_alpha() const { return false; }
 
-	virtual void set_no_delay(bool p_enabled);
+	virtual Ref<Image> get_data() const;
 
-	StreamPeerTCPWinsock();
-	~StreamPeerTCPWinsock();
+	NoiseTexture();
+	virtual ~NoiseTexture();
 };
 
-#endif // STREAM_PEER_TCP_WINSOCK_H
-
-#endif
+#endif // NOISE_TEXTURE_H

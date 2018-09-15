@@ -59,25 +59,10 @@ void ScriptEditorBase::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("search_in_files_requested", PropertyInfo(Variant::STRING, "text")));
 }
 
-static bool _can_open_in_editor(Script *p_script) {
-
+static bool _is_built_in_script(Script *p_script) {
 	String path = p_script->get_path();
 
-	if (path.find("::") != -1) {
-		//refuse handling this if it can't be edited
-
-		bool valid = false;
-		for (int i = 0; i < EditorNode::get_singleton()->get_editor_data().get_edited_scene_count(); i++) {
-			if (path.begins_with(EditorNode::get_singleton()->get_editor_data().get_scene_path(i))) {
-				valid = true;
-				break;
-			}
-		}
-
-		return valid;
-	}
-
-	return true;
+	return path.find("::") != -1;
 }
 
 class EditorScriptCodeCompletionCache : public ScriptCodeCompletionCache {
@@ -946,7 +931,7 @@ void ScriptEditor::_menu_option(int p_option) {
 
 	switch (p_option) {
 		case FILE_NEW: {
-			script_create_dialog->config("Node", ".gd");
+			script_create_dialog->config("Node", "new_script");
 			script_create_dialog->popup_centered(Size2(300, 300) * EDSCALE);
 		} break;
 		case FILE_NEW_TEXTFILE: {
@@ -1749,7 +1734,7 @@ void ScriptEditor::_update_script_names() {
 				} break;
 				case DISPLAY_DIR_AND_NAME: {
 					if (!path.get_base_dir().get_file().empty()) {
-						sd.name = path.get_base_dir().get_file() + "/" + name;
+						sd.name = path.get_base_dir().get_file().plus_file(name);
 					} else {
 						sd.name = name;
 					}
@@ -2114,8 +2099,6 @@ void ScriptEditor::_editor_play() {
 	debug_menu->get_popup()->set_item_disabled(debug_menu->get_popup()->get_item_index(DEBUG_STEP), true);
 	debug_menu->get_popup()->set_item_disabled(debug_menu->get_popup()->get_item_index(DEBUG_BREAK), false);
 	debug_menu->get_popup()->set_item_disabled(debug_menu->get_popup()->get_item_index(DEBUG_CONTINUE), true);
-
-	//debugger_gui->start_listening(Globals::get_singleton()->get("debug/debug_port"));
 }
 
 void ScriptEditor::_editor_pause() {
@@ -2738,7 +2721,7 @@ void ScriptEditor::set_scene_root_script(Ref<Script> p_script) {
 	if (bool(EditorSettings::get_singleton()->get("text_editor/external/use_external_editor")))
 		return;
 
-	if (open_dominant && p_script.is_valid() && _can_open_in_editor(p_script.ptr())) {
+	if (open_dominant && p_script.is_valid()) {
 		edit(p_script);
 	}
 }
@@ -3234,7 +3217,17 @@ ScriptEditor::~ScriptEditor() {
 void ScriptEditorPlugin::edit(Object *p_object) {
 
 	if (Object::cast_to<Script>(p_object)) {
-		script_editor->edit(Object::cast_to<Script>(p_object));
+
+		Script *p_script = Object::cast_to<Script>(p_object);
+		String scene_path = p_script->get_path().get_slice("::", 0);
+
+		if (_is_built_in_script(p_script) && !EditorNode::get_singleton()->is_scene_open(scene_path)) {
+			EditorNode::get_singleton()->load_scene(scene_path);
+
+			script_editor->call_deferred("edit", p_script);
+		} else {
+			script_editor->edit(p_script);
+		}
 	}
 
 	if (Object::cast_to<TextFile>(p_object)) {
@@ -3249,13 +3242,7 @@ bool ScriptEditorPlugin::handles(Object *p_object) const {
 	}
 
 	if (Object::cast_to<Script>(p_object)) {
-
-		bool valid = _can_open_in_editor(Object::cast_to<Script>(p_object));
-
-		if (!valid) { //user tried to open it by clicking
-			EditorNode::get_singleton()->show_warning(TTR("Built-in scripts can only be edited when the scene they belong to is loaded"));
-		}
-		return valid;
+		return true;
 	}
 
 	return p_object->is_class("Script");

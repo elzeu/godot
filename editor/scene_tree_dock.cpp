@@ -224,7 +224,7 @@ void SceneTreeDock::_perform_instance_scenes(const Vector<String> &p_files, Node
 		String new_name = parent->validate_child_name(instanced_scene);
 		ScriptEditorDebugger *sed = ScriptEditor::get_singleton()->get_debugger();
 		editor_data->get_undo_redo().add_do_method(sed, "live_debug_instance_node", edited_scene->get_path_to(parent), p_files[i], new_name);
-		editor_data->get_undo_redo().add_undo_method(sed, "live_debug_remove_node", NodePath(String(edited_scene->get_path_to(parent)) + "/" + new_name));
+		editor_data->get_undo_redo().add_undo_method(sed, "live_debug_remove_node", NodePath(String(edited_scene->get_path_to(parent)).plus_file(new_name)));
 	}
 
 	editor_data->get_undo_redo().commit_action();
@@ -354,9 +354,9 @@ void SceneTreeDock::_tool_selected(int p_tool, bool p_confirm_override) {
 			if (path == "") {
 				String root_path = editor_data->get_edited_scene_root()->get_filename();
 				if (root_path == "") {
-					path = "res://" + selected->get_name();
+					path = String("res://").plus_file(selected->get_name());
 				} else {
-					path = root_path.get_base_dir() + "/" + selected->get_name();
+					path = root_path.get_base_dir().plus_file(selected->get_name());
 				}
 			}
 
@@ -399,11 +399,6 @@ void SceneTreeDock::_tool_selected(int p_tool, bool p_confirm_override) {
 					const RefPtr empty;
 					editor_data->get_undo_redo().add_do_method(E->get(), "set_script", empty);
 					editor_data->get_undo_redo().add_undo_method(E->get(), "set_script", existing);
-
-					if (E->get()->has_meta("_editor_icon")) {
-						editor_data->get_undo_redo().add_do_method(E->get(), "set_meta", "_editor_icon", get_icon(E->get()->get_class(), "EditorIcons"));
-						editor_data->get_undo_redo().add_undo_method(E->get(), "set_meta", "_editor_icon", E->get()->get_meta("_editor_icon"));
-					}
 				}
 			}
 
@@ -535,7 +530,7 @@ void SceneTreeDock::_tool_selected(int p_tool, bool p_confirm_override) {
 				ScriptEditorDebugger *sed = ScriptEditor::get_singleton()->get_debugger();
 
 				editor_data->get_undo_redo().add_do_method(sed, "live_debug_duplicate_node", edited_scene->get_path_to(node), dup->get_name());
-				editor_data->get_undo_redo().add_undo_method(sed, "live_debug_remove_node", NodePath(String(edited_scene->get_path_to(parent)) + "/" + dup->get_name()));
+				editor_data->get_undo_redo().add_undo_method(sed, "live_debug_remove_node", NodePath(String(edited_scene->get_path_to(parent)).plus_file(dup->get_name())));
 			}
 
 			editor_data->get_undo_redo().commit_action();
@@ -1429,7 +1424,7 @@ void SceneTreeDock::_do_reparent(Node *p_new_parent, int p_position_in_parent, V
 		}
 
 		editor_data->get_undo_redo().add_do_method(sed, "live_debug_reparent_node", edited_scene->get_path_to(node), edited_scene->get_path_to(new_parent), new_name, p_position_in_parent + inc);
-		editor_data->get_undo_redo().add_undo_method(sed, "live_debug_reparent_node", NodePath(String(edited_scene->get_path_to(new_parent)) + "/" + new_name), edited_scene->get_path_to(node->get_parent()), node->get_name(), node->get_index());
+		editor_data->get_undo_redo().add_undo_method(sed, "live_debug_reparent_node", NodePath(String(edited_scene->get_path_to(new_parent)).plus_file(new_name)), edited_scene->get_path_to(node->get_parent()), node->get_name(), node->get_index());
 
 		if (p_keep_global_xform) {
 			if (Object::cast_to<Node2D>(node))
@@ -1501,19 +1496,6 @@ void SceneTreeDock::_script_created(Ref<Script> p_script) {
 		Ref<Script> existing = E->get()->get_script();
 		editor_data->get_undo_redo().add_do_method(E->get(), "set_script", p_script.get_ref_ptr());
 		editor_data->get_undo_redo().add_undo_method(E->get(), "set_script", existing);
-
-		String icon_path;
-		String name = p_script->get_language()->get_global_class_name(p_script->get_path(), NULL, &icon_path);
-		if (ScriptServer::is_global_class(name)) {
-			RES icon = ResourceLoader::load(icon_path);
-			editor_data->get_undo_redo().add_do_method(E->get(), "set_meta", "_editor_icon", icon);
-			String existing_name = existing.is_valid() ? existing->get_language()->get_global_class_name(existing->get_path()) : String();
-			if (existing.is_null() || !ScriptServer::is_global_class(existing_name)) {
-				editor_data->get_undo_redo().add_undo_method(E->get(), "set_meta", "_editor_icon", get_icon(E->get()->get_class(), "EditorIcons"));
-			} else {
-				editor_data->get_undo_redo().add_undo_method(E->get(), "set_meta", "_editor_icon", editor_data->script_class_get_icon_path(existing_name));
-			}
-		}
 	}
 
 	editor_data->get_undo_redo().commit_action();
@@ -1661,7 +1643,7 @@ void SceneTreeDock::_create() {
 			String new_name = parent->validate_child_name(child);
 			ScriptEditorDebugger *sed = ScriptEditor::get_singleton()->get_debugger();
 			editor_data->get_undo_redo().add_do_method(sed, "live_debug_create_node", edited_scene->get_path_to(parent), child->get_class(), new_name);
-			editor_data->get_undo_redo().add_undo_method(sed, "live_debug_remove_node", NodePath(String(edited_scene->get_path_to(parent)) + "/" + new_name));
+			editor_data->get_undo_redo().add_undo_method(sed, "live_debug_remove_node", NodePath(String(edited_scene->get_path_to(parent)).plus_file(new_name)));
 
 		} else {
 
@@ -2029,12 +2011,7 @@ void SceneTreeDock::_add_children_to_popup(Object *p_obj, int p_depth) {
 		if (!obj)
 			continue;
 
-		Ref<Texture> icon;
-
-		if (has_icon(obj->get_class(), "EditorIcons"))
-			icon = get_icon(obj->get_class(), "EditorIcons");
-		else
-			icon = get_icon("Object", "EditorIcons");
+		Ref<Texture> icon = EditorNode::get_singleton()->get_object_icon(obj);
 
 		if (menu->get_item_count() == 0) {
 			menu->add_submenu_item(TTR("Sub-Resources"), "Sub-Resources");
@@ -2264,7 +2241,7 @@ void SceneTreeDock::_update_create_root_dialog() {
 					String name = l.get_slicec(' ', 0);
 					if (ScriptServer::is_global_class(name))
 						name = ScriptServer::get_global_class_base(name);
-					button->set_icon(get_icon(name, "EditorIcons"));
+					button->set_icon(EditorNode::get_singleton()->get_class_icon(name));
 					button->connect("pressed", this, "_favorite_root_selected", make_binds(l));
 				}
 			}

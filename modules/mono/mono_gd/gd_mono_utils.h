@@ -131,8 +131,9 @@ struct MonoCache {
 	GDMonoClass *class_SyncAttribute;
 	GDMonoClass *class_RemoteSyncAttribute;
 	GDMonoClass *class_MasterSyncAttribute;
-	GDMonoClass *class_SlaveSyncAttribute;
+	GDMonoClass *class_PuppetSyncAttribute;
 	GDMonoClass *class_MasterAttribute;
+	GDMonoClass *class_PuppetAttribute;
 	GDMonoClass *class_SlaveAttribute;
 	GDMonoClass *class_GodotMethodAttribute;
 	GDMonoField *field_GodotMethodAttribute_methodName;
@@ -239,6 +240,8 @@ MonoString *object_to_string(MonoObject *p_obj, MonoException **p_exc);
 
 void property_set_value(MonoProperty *p_prop, void *p_obj, void **p_params, MonoException **p_exc);
 MonoObject *property_get_value(MonoProperty *p_prop, void *p_obj, void **p_params, MonoException **p_exc);
+
+uint64_t unbox_enum_value(MonoObject *p_boxed, MonoType *p_enum_basetype, bool &r_error);
 
 } // namespace GDMonoUtils
 

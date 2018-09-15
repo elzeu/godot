@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  tcp_server_winsock.h                                                 */
+/*  register_types.h                                                     */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,34 +28,5 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifdef WINDOWS_ENABLED
-
-#ifndef TCP_SERVER_WINSOCK_H
-#define TCP_SERVER_WINSOCK_H
-
-#include "core/io/tcp_server.h"
-
-class TCPServerWinsock : public TCP_Server {
-
-	int listen_sockfd;
-	IP::Type sock_type;
-
-	static TCP_Server *_create();
-
-public:
-	virtual Error listen(uint16_t p_port, const IP_Address &p_bind_address = IP_Address("*"));
-	virtual bool is_connection_available() const;
-	virtual Ref<StreamPeerTCP> take_connection();
-
-	virtual void stop(); //stop listening
-
-	static void make_default();
-	static void cleanup();
-
-	TCPServerWinsock();
-	~TCPServerWinsock();
-};
-
-#endif
-
-#endif
+void register_opensimplex_types();
+void unregister_opensimplex_types();

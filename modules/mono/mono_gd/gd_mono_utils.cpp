@@ -126,10 +126,11 @@ void MonoCache::clear_members() {
 	class_RemoteAttribute = NULL;
 	class_SyncAttribute = NULL;
 	class_MasterAttribute = NULL;
+	class_PuppetAttribute = NULL;
 	class_SlaveAttribute = NULL;
 	class_RemoteSyncAttribute = NULL;
 	class_MasterSyncAttribute = NULL;
-	class_SlaveSyncAttribute = NULL;
+	class_PuppetSyncAttribute = NULL;
 	class_GodotMethodAttribute = NULL;
 	field_GodotMethodAttribute_methodName = NULL;
 
@@ -225,10 +226,11 @@ void update_godot_api_cache() {
 	CACHE_CLASS_AND_CHECK(RemoteAttribute, GODOT_API_CLASS(RemoteAttribute));
 	CACHE_CLASS_AND_CHECK(SyncAttribute, GODOT_API_CLASS(SyncAttribute));
 	CACHE_CLASS_AND_CHECK(MasterAttribute, GODOT_API_CLASS(MasterAttribute));
+	CACHE_CLASS_AND_CHECK(PuppetAttribute, GODOT_API_CLASS(PuppetAttribute));
 	CACHE_CLASS_AND_CHECK(SlaveAttribute, GODOT_API_CLASS(SlaveAttribute));
 	CACHE_CLASS_AND_CHECK(RemoteSyncAttribute, GODOT_API_CLASS(RemoteSyncAttribute));
 	CACHE_CLASS_AND_CHECK(MasterSyncAttribute, GODOT_API_CLASS(MasterSyncAttribute));
-	CACHE_CLASS_AND_CHECK(SlaveSyncAttribute, GODOT_API_CLASS(SlaveSyncAttribute));
+	CACHE_CLASS_AND_CHECK(PuppetSyncAttribute, GODOT_API_CLASS(PuppetSyncAttribute));
 	CACHE_CLASS_AND_CHECK(GodotMethodAttribute, GODOT_API_CLASS(GodotMethodAttribute));
 	CACHE_FIELD_AND_CHECK(GodotMethodAttribute, methodName, CACHED_CLASS(GodotMethodAttribute)->get_field("methodName"));
 
@@ -661,6 +663,35 @@ MonoObject *property_get_value(MonoProperty *p_prop, void *p_obj, void **p_param
 	MonoObject *ret = mono_property_get_value(p_prop, p_obj, p_params, (MonoObject **)p_exc);
 	GD_MONO_END_RUNTIME_INVOKE;
 	return ret;
+}
+
+uint64_t unbox_enum_value(MonoObject *p_boxed, MonoType *p_enum_basetype, bool &r_error) {
+	r_error = false;
+	switch (mono_type_get_type(p_enum_basetype)) {
+		case MONO_TYPE_BOOLEAN:
+			return (bool)GDMonoMarshal::unbox<MonoBoolean>(p_boxed) ? 1 : 0;
+		case MONO_TYPE_CHAR:
+			return GDMonoMarshal::unbox<uint16_t>(p_boxed);
+		case MONO_TYPE_U1:
+			return GDMonoMarshal::unbox<uint8_t>(p_boxed);
+		case MONO_TYPE_U2:
+			return GDMonoMarshal::unbox<uint16_t>(p_boxed);
+		case MONO_TYPE_U4:
+			return GDMonoMarshal::unbox<uint32_t>(p_boxed);
+		case MONO_TYPE_U8:
+			return GDMonoMarshal::unbox<uint64_t>(p_boxed);
+		case MONO_TYPE_I1:
+			return GDMonoMarshal::unbox<int8_t>(p_boxed);
+		case MONO_TYPE_I2:
+			return GDMonoMarshal::unbox<int16_t>(p_boxed);
+		case MONO_TYPE_I4:
+			return GDMonoMarshal::unbox<int32_t>(p_boxed);
+		case MONO_TYPE_I8:
+			return GDMonoMarshal::unbox<int64_t>(p_boxed);
+		default:
+			r_error = true;
+			return 0;
+	}
 }
 
 } // namespace GDMonoUtils
