@@ -4412,19 +4412,19 @@ CanvasItemEditor::CanvasItemEditor(EditorNode *p_editor) {
 	move_button->set_shortcut(ED_SHORTCUT("canvas_item_editor/move_mode", TTR("Move Mode"), KEY_W));
 	move_button->set_tooltip(TTR("Move Mode"));
 
-	scale_button = memnew(ToolButton);
-	hb->add_child(scale_button);
-	scale_button->set_toggle_mode(true);
-	scale_button->connect("pressed", this, "_button_tool_select", make_binds(TOOL_SCALE));
-	scale_button->set_shortcut(ED_SHORTCUT("canvas_item_editor/scale_mode", TTR("Scale Mode"), KEY_S));
-	scale_button->set_tooltip(TTR("Scale Mode"));
-
 	rotate_button = memnew(ToolButton);
 	hb->add_child(rotate_button);
 	rotate_button->set_toggle_mode(true);
 	rotate_button->connect("pressed", this, "_button_tool_select", make_binds(TOOL_ROTATE));
 	rotate_button->set_shortcut(ED_SHORTCUT("canvas_item_editor/rotate_mode", TTR("Rotate Mode"), KEY_E));
 	rotate_button->set_tooltip(TTR("Rotate Mode"));
+
+	scale_button = memnew(ToolButton);
+	hb->add_child(scale_button);
+	scale_button->set_toggle_mode(true);
+	scale_button->connect("pressed", this, "_button_tool_select", make_binds(TOOL_SCALE));
+	scale_button->set_shortcut(ED_SHORTCUT("canvas_item_editor/scale_mode", TTR("Scale Mode"), KEY_S));
+	scale_button->set_tooltip(TTR("Scale Mode"));
 
 	hb->add_child(memnew(VSeparator));
 
@@ -4917,7 +4917,6 @@ void CanvasItemEditorViewport::_perform_drop_data() {
 
 	// Without root dropping multiple files is not allowed
 	if (!target_node && selected_files.size() > 1) {
-		accept->get_ok()->set_text(TTR("Ok"));
 		accept->set_text(TTR("Cannot instantiate multiple nodes without root."));
 		accept->popup_centered_minsize();
 		return;
@@ -4979,7 +4978,6 @@ void CanvasItemEditorViewport::_perform_drop_data() {
 			files_str += error_files[i].get_file().get_basename() + ",";
 		}
 		files_str = files_str.substr(0, files_str.length() - 1);
-		accept->get_ok()->set_text(TTR("OK"));
 		accept->set_text(vformat(TTR("Error instancing scene from %s"), files_str.c_str()));
 		accept->popup_centered_minsize();
 	}
