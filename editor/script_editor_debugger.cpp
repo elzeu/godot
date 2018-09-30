@@ -502,8 +502,12 @@ void ScriptEditorDebugger::_parse_message(const String &p_msg, const Array &p_da
 				String str = var;
 				var = str.substr(4, str.length());
 
-				if (str.begins_with("PATH"))
-					var = ResourceLoader::load(var);
+				if (str.begins_with("PATH")) {
+					if (String(var).empty())
+						var = RES();
+					else
+						var = ResourceLoader::load(var);
+				}
 			}
 
 			debugObj->prop_values[pinfo.name] = var;
@@ -577,12 +581,9 @@ void ScriptEditorDebugger::_parse_message(const String &p_msg, const Array &p_da
 			String hs = String();
 
 			if (v.get_type() == Variant::OBJECT) {
+				v = Object::cast_to<EncodedObjectAsID>(v)->get_object_id();
 				h = PROPERTY_HINT_OBJECT_ID;
-				v = ObjectDB::get_instance(Object::cast_to<EncodedObjectAsID>(v)->get_object_id());
-				String s = v;
-				s = s.replace("[", "");
-				hs = s.get_slice(":", 0);
-				v = s.get_slice(":", 1).to_int();
+				hs = "Object";
 			}
 
 			variables->add_property("Locals/" + n, v, h, hs);
@@ -599,12 +600,9 @@ void ScriptEditorDebugger::_parse_message(const String &p_msg, const Array &p_da
 			String hs = String();
 
 			if (v.get_type() == Variant::OBJECT) {
+				v = Object::cast_to<EncodedObjectAsID>(v)->get_object_id();
 				h = PROPERTY_HINT_OBJECT_ID;
-				v = ObjectDB::get_instance(Object::cast_to<EncodedObjectAsID>(v)->get_object_id());
-				String s = v;
-				s = s.replace("[", "");
-				hs = s.get_slice(":", 0);
-				v = s.get_slice(":", 1).to_int();
+				hs = "Object";
 			}
 
 			variables->add_property("Members/" + n, v, h, hs);
@@ -621,12 +619,9 @@ void ScriptEditorDebugger::_parse_message(const String &p_msg, const Array &p_da
 			String hs = String();
 
 			if (v.get_type() == Variant::OBJECT) {
+				v = Object::cast_to<EncodedObjectAsID>(v)->get_object_id();
 				h = PROPERTY_HINT_OBJECT_ID;
-				v = ObjectDB::get_instance(Object::cast_to<EncodedObjectAsID>(v)->get_object_id());
-				String s = v;
-				s = s.replace("[", "");
-				hs = s.get_slice(":", 0);
-				v = s.get_slice(":", 1).to_int();
+				hs = "Object";
 			}
 
 			variables->add_property("Globals/" + n, v, h, hs);

@@ -165,7 +165,7 @@ uniform vec3 light_direction;
 uniform vec3 light_position;
 
 uniform float light_range;
-uniform vec4 light_attenuation;
+uniform float light_attenuation;
 
 // spot
 uniform float light_spot_attenuation;
@@ -463,10 +463,15 @@ VERTEX_SHADER_CODE
 
 	float normalized_distance = light_length / light_range;
 
-	float omni_attenuation = pow(1.0 - normalized_distance, light_attenuation.w);
+	if (normalized_distance < 1.0) {
 
-	vec3 attenuation = vec3(omni_attenuation);
-	light_att = vec3(omni_attenuation);
+		float omni_attenuation = pow(1.0 - normalized_distance, light_attenuation);
+
+		vec3 attenuation = vec3(omni_attenuation);
+		light_att = vec3(omni_attenuation);
+	} else {
+		light_att = vec3(0.0);
+	}
 
 	L = normalize(light_vec);
 
@@ -478,17 +483,30 @@ VERTEX_SHADER_CODE
 	float light_length = length(light_rel_vec);
 	float normalized_distance = light_length / light_range;
 
-	float spot_attenuation = pow(1.0 - normalized_distance, light_attenuation.w);
-	vec3 spot_dir = light_direction;
+	if (normalized_distance < 1.0) {
 
-	float spot_cutoff = light_spot_angle;
+		float spot_attenuation = pow(1.0 - normalized_distance, light_attenuation);
+		vec3 spot_dir = light_direction;
 
-	float scos = max(dot(-normalize(light_rel_vec), spot_dir), spot_cutoff);
-	float spot_rim = max(0.0001, (1.0 - scos) / (1.0 - spot_cutoff));
+		float spot_cutoff = light_spot_angle;
 
-	spot_attenuation *= 1.0 - pow(spot_rim, light_spot_attenuation);
+		float angle = dot(-normalize(light_rel_vec), spot_dir);
 
-	light_att = vec3(spot_attenuation);
+		if (angle > spot_cutoff) {
+
+			float scos = max(angle, spot_cutoff);
+			float spot_rim = max(0.0001, (1.0 - scos) / (1.0 - spot_cutoff));
+
+			spot_attenuation *= 1.0 - pow(spot_rim, light_spot_attenuation);
+
+			light_att = vec3(spot_attenuation);
+		} else {
+			light_att=vec3(0.0);
+		}
+	} else {
+		light_att=vec3(0.0);
+	}
+
 	L = normalize(light_rel_vec);
 
 #endif
@@ -755,12 +773,12 @@ void reflection_process(samplerCube reflection_map,
 #endif
 
 	ambient_out.rgb = textureCubeLod(reflection_map, amb_normal, RADIANCE_MAX_LOD).rgb;
-	ambient_out.a = blend;
 	ambient_out.rgb = mix(ref_ambient.rgb, ambient_out.rgb, ref_ambient.a);
 	if (exterior) {
 		ambient_out.rgb = mix(ambient, ambient_out.rgb, blend);
 	}
 
+	ambient_out.a = blend;
 	ambient_out.rgb *= blend;
 	ambient_accum += ambient_out;
 
@@ -814,7 +832,7 @@ uniform vec3 light_direction;
 // omni
 uniform vec3 light_position;
 
-uniform vec4 light_attenuation;
+uniform float light_attenuation;
 
 // spot
 uniform float light_spot_attenuation;
@@ -1267,6 +1285,7 @@ void main() {
 	float clearcoat_gloss = 0.0;
 	float anisotropy = 0.0;
 	vec2 anisotropy_flow = vec2(1.0, 0.0);
+	float sss_strength = 0.0; //unused
 
 	float alpha = 1.0;
 	float side = 1.0;
@@ -1357,12 +1376,14 @@ FRAGMENT_SHADER_CODE
 	ambient_light *= ambient_energy;
 
 	
+#if defined(USE_REFLECTION_PROBE1) || defined(USE_REFLECTION_PROBE2)
+
 	
-#ifdef USE_REFLECTION_PROBE1
 
 	vec4 ambient_accum = vec4(0.0);
 	vec4 reflection_accum = vec4(0.0);
 
+#ifdef USE_REFLECTION_PROBE1
 
 	reflection_process(reflection_probe1,
 #ifdef USE_VERTEX_LIGHTING
@@ -1378,6 +1399,9 @@ FRAGMENT_SHADER_CODE
 			   refprobe1_exterior,refprobe1_intensity, refprobe1_ambient, roughness,
 			   ambient_light, specular_light, reflection_accum, ambient_accum);
 
+
+
+#endif // USE_REFLECTION_PROBE1
 
 #ifdef USE_REFLECTION_PROBE2
 
@@ -1407,7 +1431,7 @@ FRAGMENT_SHADER_CODE
 	}
 #endif
 
-#endif //use reflection probe 1
+#endif // defined(USE_REFLECTION_PROBE1) || defined(USE_REFLECTION_PROBE2)
 
 #ifdef USE_LIGHTMAP
 	//ambient light will come entirely from lightmap is lightmap is used
@@ -1469,10 +1493,14 @@ FRAGMENT_SHADER_CODE
 	float light_length = length(light_vec);
 
 	float normalized_distance = light_length / light_range;
+	if (normalized_distance < 1.0) {
 
-	float omni_attenuation = pow(1.0 - normalized_distance, light_attenuation.w);
+		float omni_attenuation = pow(1.0 - normalized_distance, light_attenuation);
 
-	light_att = vec3(omni_attenuation);
+		light_att = vec3(omni_attenuation);
+	} else {
+		light_att = vec3(0.0);
+	}
 	L = normalize(light_vec);
 
 #endif
@@ -1638,17 +1666,25 @@ FRAGMENT_SHADER_CODE
 	float light_length = length(light_rel_vec);
 	float normalized_distance = light_length / light_range;
 
-	float spot_attenuation = pow(1.0 - normalized_distance, light_attenuation.w);
-	vec3 spot_dir = light_direction;
+	if (normalized_distance < 1.0) {
+		float spot_attenuation = pow(1.0 - normalized_distance, light_attenuation);
+		vec3 spot_dir = light_direction;
 
-	float spot_cutoff = light_spot_angle;
+		float spot_cutoff = light_spot_angle;
+		float angle = dot(-normalize(light_rel_vec), spot_dir);
 
-	float scos = max(dot(-normalize(light_rel_vec), spot_dir), spot_cutoff);
-	float spot_rim = max(0.0001, (1.0 - scos) / (1.0 - spot_cutoff));
+		if (angle > spot_cutoff) {
+			float scos = max(angle, spot_cutoff);
+			float spot_rim = max(0.0001, (1.0 - scos) / (1.0 - spot_cutoff));
+			spot_attenuation *= 1.0 - pow(spot_rim, light_spot_attenuation);
 
-	spot_attenuation *= 1.0 - pow(spot_rim, light_spot_attenuation);
-
-	light_att = vec3(spot_attenuation);
+			light_att = vec3(spot_attenuation);
+		} else {
+			light_att = vec3(0.0);
+		}
+	} else {
+		light_att = vec3(0.0);
+	}
 
 	L = normalize(light_rel_vec);
 
