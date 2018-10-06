@@ -726,9 +726,10 @@ void ScriptEditorDebugger::_parse_message(const String &p_msg, const Array &p_da
 		String source(err[5]);
 		bool source_is_project_file = source.begins_with("res://");
 		if (source_is_project_file)
-			source = source.get_file();
+			txt = source.get_file() + ":" + String(err[6]);
+		else
+			txt = source + ":" + String(err[6]);
 
-		txt = source + ":" + String(err[6]);
 		String method = err[4];
 		if (method.length() > 0)
 			txt += " @ " + method + "()";
@@ -1292,9 +1293,6 @@ void ScriptEditorDebugger::stop() {
 	EditorNode::get_singleton()->get_pause_button()->set_disabled(true);
 	EditorNode::get_singleton()->get_scene_tree_dock()->hide_remote_tree();
 	EditorNode::get_singleton()->get_scene_tree_dock()->hide_tab_buttons();
-
-	Node *node = editor->get_scene_tree_dock()->get_tree_editor()->get_selected();
-	editor->push_item(node);
 
 	if (hide_on_stop) {
 		if (is_visible_in_tree())
