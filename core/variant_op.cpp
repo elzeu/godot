@@ -521,7 +521,7 @@ void Variant::evaluate(const Operator &p_op, const Variant &p_a,
 				const Dictionary *arr_a = reinterpret_cast<const Dictionary *>(p_a._data._mem);
 				const Dictionary *arr_b = reinterpret_cast<const Dictionary *>(p_b._data._mem);
 
-				_RETURN((*arr_a == *arr_b) == false);
+				_RETURN(*arr_a != *arr_b);
 			}
 
 			CASE_TYPE(math, OP_NOT_EQUAL, ARRAY) {
@@ -3542,7 +3542,10 @@ void Variant::interpolate(const Variant &a, const Variant &b, float c, Variant &
 		case INT: {
 			int64_t va = a._data._int;
 			int64_t vb = b._data._int;
-			r_dst = int((1.0 - c) * va + vb * c);
+			if (va != vb)
+				r_dst = int((1.0 - c) * va + vb * c);
+			else //avoid int casting issues
+				r_dst = a;
 		}
 			return;
 		case REAL: {

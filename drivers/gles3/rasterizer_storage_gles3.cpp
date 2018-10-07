@@ -730,7 +730,7 @@ void RasterizerStorageGLES3::texture_set_data(RID p_texture, const Ref<Image> &p
 		}
 	};
 
-	GLenum blit_target;
+	GLenum blit_target = GL_TEXTURE_2D;
 
 	switch (texture->type) {
 		case VS::TEXTURE_TYPE_2D: {
@@ -948,7 +948,7 @@ void RasterizerStorageGLES3::texture_set_data_partial(RID p_texture, const Ref<I
 	Image::Format real_format;
 	Ref<Image> img = _get_gl_image_and_format(p_sub_img, p_sub_img->get_format(), texture->flags, real_format, format, internal_format, type, compressed, srgb);
 
-	GLenum blit_target;
+	GLenum blit_target = GL_TEXTURE_2D;
 
 	switch (texture->type) {
 		case VS::TEXTURE_TYPE_2D: {
@@ -6841,7 +6841,7 @@ void RasterizerStorageGLES3::_render_target_allocate(RenderTarget *rt) {
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, level);
 			glDisable(GL_SCISSOR_TEST);
 			glColorMask(1, 1, 1, 1);
-			if (rt->buffers.active == false) {
+			if (!rt->buffers.active) {
 				glDepthMask(GL_TRUE);
 			}
 
