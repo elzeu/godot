@@ -1779,7 +1779,7 @@ void EditorPropertyColor::_color_changed(const Color &p_color) {
 
 void EditorPropertyColor::_popup_closed() {
 
-	emit_signal("property_changed", get_edited_property(), picker->get_pick_color(), true);
+	emit_signal("property_changed", get_edited_property(), picker->get_pick_color(), false);
 }
 
 void EditorPropertyColor::_bind_methods() {
@@ -2380,7 +2380,7 @@ void EditorPropertyResource::update_property() {
 		if (res->get_name() != String()) {
 			assign->set_text(res->get_name());
 		} else if (res->get_path().is_resource_file()) {
-			assign->set_text(res->get_name());
+			assign->set_text(res->get_path().get_file());
 			assign->set_tooltip(res->get_path());
 		} else {
 			assign->set_text(res->get_class());
