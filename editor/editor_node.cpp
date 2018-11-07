@@ -574,13 +574,29 @@ void EditorNode::_editor_select_prev() {
 	_editor_select(editor);
 }
 
-Error EditorNode::load_resource(const String &p_scene) {
+Error EditorNode::load_resource(const String &p_resource, bool p_ignore_broken_deps) {
 
-	RES res = ResourceLoader::load(p_scene);
+	dependency_errors.clear();
+
+	Error err;
+	RES res = ResourceLoader::load(p_resource, "", false, &err);
 	ERR_FAIL_COND_V(!res.is_valid(), ERR_CANT_OPEN);
 
-	inspector_dock->edit_resource(res);
+	if (!p_ignore_broken_deps && dependency_errors.has(p_resource)) {
 
+		//current_option = -1;
+		Vector<String> errors;
+		for (Set<String>::Element *E = dependency_errors[p_resource].front(); E; E = E->next()) {
+
+			errors.push_back(E->get());
+		}
+		dependency_error->show(DependencyErrorDialog::MODE_RESOURCE, p_resource, errors);
+		dependency_errors.erase(p_resource);
+
+		return ERR_FILE_MISSING_DEPENDENCIES;
+	}
+
+	inspector_dock->edit_resource(res);
 	return OK;
 }
 
@@ -1061,6 +1077,9 @@ void EditorNode::_save_scene(String p_file, int idx) {
 			set_current_version(editor_data.get_undo_redo().get_version());
 		else
 			editor_data.set_edited_scene_version(0, idx);
+
+		editor_folding.save_scene_folding(scene, p_file);
+
 		_update_title();
 		_update_scene_tabs();
 	} else {
@@ -2251,7 +2270,7 @@ void EditorNode::_menu_option_confirm(int p_option, bool p_confirmed) {
 			emit_signal("request_help_search", "");
 		} break;
 		case HELP_DOCS: {
-			OS::get_singleton()->shell_open("http://docs.godotengine.org/");
+			OS::get_singleton()->shell_open("https://docs.godotengine.org/");
 		} break;
 		case HELP_QA: {
 			OS::get_singleton()->shell_open("https://godotengine.org/qa/");
@@ -2842,7 +2861,7 @@ Error EditorNode::load_scene(const String &p_scene, bool p_ignore_broken_deps, b
 
 			errors.push_back(E->get());
 		}
-		dependency_error->show(lpath, errors);
+		dependency_error->show(DependencyErrorDialog::MODE_SCENE, lpath, errors);
 		opening_prev = false;
 
 		if (prev != -1) {
@@ -2906,6 +2925,8 @@ Error EditorNode::load_scene(const String &p_scene, bool p_ignore_broken_deps, b
 	_update_title();
 	_update_scene_tabs();
 	_add_to_recent_scenes(lpath);
+
+	editor_folding.load_scene_folding(new_scene, lpath);
 
 	prev_scene->set_disabled(previous_scenes.size() == 0);
 	opening_prev = false;
@@ -3930,7 +3951,7 @@ void EditorNode::_scene_tab_input(const Ref<InputEvent> &p_input) {
 			scene_tabs_context_menu->add_shortcut(ED_GET_SHORTCUT("editor/save_all_scenes"), FILE_SAVE_ALL_SCENES);
 			if (scene_tabs->get_hovered_tab() >= 0) {
 				scene_tabs_context_menu->add_separator();
-				scene_tabs_context_menu->add_item(TTR("Show in filesystem"), FILE_SHOW_IN_FILESYSTEM);
+				scene_tabs_context_menu->add_item(TTR("Show in FileSystem"), FILE_SHOW_IN_FILESYSTEM);
 				scene_tabs_context_menu->add_item(TTR("Play This Scene"), RUN_PLAY_SCENE);
 				scene_tabs_context_menu->add_item(TTR("Close Tab"), FILE_CLOSE);
 			}
@@ -4544,6 +4565,19 @@ void EditorNode::_video_driver_selected(int p_which) {
 	_update_video_driver_color();
 }
 
+void EditorNode::_resource_saved(RES p_resource, const String &p_path) {
+	if (EditorFileSystem::get_singleton()) {
+		EditorFileSystem::get_singleton()->update_file(p_path);
+	}
+
+	singleton->editor_folding.save_resource_folding(p_resource, p_path);
+}
+
+void EditorNode::_resource_loaded(RES p_resource, const String &p_path) {
+
+	singleton->editor_folding.load_resource_folding(p_resource, p_path);
+}
+
 void EditorNode::_bind_methods() {
 
 	ClassDB::bind_method("_menu_option", &EditorNode::_menu_option);
@@ -4733,7 +4767,7 @@ EditorNode::EditorNode() {
 	ResourceLoader::set_timestamp_on_load(true);
 	ResourceSaver::set_timestamp_on_save(true);
 
-    default_value_cache = memnew( EditorDefaultClassValueCache );
+	default_value_cache = memnew(EditorDefaultClassValueCache);
 
 	{ //register importers at the beginning, so dialogs are created with the right extensions
 		Ref<ResourceImporterTexture> import_texture;
@@ -4846,6 +4880,7 @@ EditorNode::EditorNode() {
 	EDITOR_DEF_RST("interface/scene_tabs/show_thumbnail_on_hover", true);
 	EDITOR_DEF_RST("interface/inspector/capitalize_properties", true);
 	EDITOR_DEF_RST("interface/inspector/disable_folding", false);
+	EDITOR_DEF_RST("interface/inspector/auto_unfold_edited", true);
 	EDITOR_DEF("interface/inspector/horizontal_vector2_editing", false);
 	EDITOR_DEF("interface/inspector/horizontal_vector_types_editing", true);
 	EDITOR_DEF("interface/inspector/open_resources_in_current_inspector", true);
@@ -5162,7 +5197,7 @@ EditorNode::EditorNode() {
 	p->add_separator();
 	p->add_shortcut(ED_SHORTCUT("editor/save_scene", TTR("Save Scene"), KEY_MASK_CMD + KEY_S), FILE_SAVE_SCENE);
 	p->add_shortcut(ED_SHORTCUT("editor/save_scene_as", TTR("Save Scene As..."), KEY_MASK_SHIFT + KEY_MASK_CMD + KEY_S), FILE_SAVE_AS_SCENE);
-	p->add_shortcut(ED_SHORTCUT("editor/save_all_scenes", TTR("Save all Scenes"), KEY_MASK_ALT + KEY_MASK_SHIFT + KEY_MASK_CMD + KEY_S), FILE_SAVE_ALL_SCENES);
+	p->add_shortcut(ED_SHORTCUT("editor/save_all_scenes", TTR("Save All Scenes"), KEY_MASK_ALT + KEY_MASK_SHIFT + KEY_MASK_CMD + KEY_S), FILE_SAVE_ALL_SCENES);
 	p->add_separator();
 	p->add_shortcut(ED_SHORTCUT("editor/close_scene", TTR("Close Scene"), KEY_MASK_SHIFT + KEY_MASK_CMD + KEY_W), FILE_CLOSE);
 	p->add_separator();
@@ -5831,6 +5866,9 @@ EditorNode::EditorNode() {
 	print_handler.userdata = this;
 	add_print_handler(&print_handler);
 
+	ResourceSaver::set_save_callback(_resource_saved);
+	ResourceLoader::set_load_callback(_resource_loaded);
+
 #ifdef OSX_ENABLED
 	ED_SHORTCUT("editor/editor_2d", TTR("Open 2D Editor"), KEY_MASK_ALT | KEY_1);
 	ED_SHORTCUT("editor/editor_3d", TTR("Open 3D Editor"), KEY_MASK_ALT | KEY_2);
@@ -5859,7 +5897,7 @@ EditorNode::~EditorNode() {
 	memdelete(editor_plugins_force_input_forwarding);
 	memdelete(file_server);
 	memdelete(progress_hb);
-    memdelete(default_value_cache);
+	memdelete(default_value_cache);
 	EditorSettings::destroy();
 }
 

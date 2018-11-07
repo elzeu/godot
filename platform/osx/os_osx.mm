@@ -328,13 +328,14 @@ static Vector2 get_mouse_pos(NSPoint locationInWindow, CGFloat backingScaleFacto
 	//_GodotPlatformSetCursorMode(window, window->cursorMode);
 	[OS_OSX::singleton->context update];
 
-	get_mouse_pos(
-			[OS_OSX::singleton->window_object mouseLocationOutsideOfEventStream],
-			[OS_OSX::singleton->window_view backingScaleFactor]);
-	OS_OSX::singleton->input->set_mouse_position(Point2(mouse_x, mouse_y));
+	if (OS_OSX::singleton->get_main_loop()) {
+		get_mouse_pos(
+				[OS_OSX::singleton->window_object mouseLocationOutsideOfEventStream],
+				[OS_OSX::singleton->window_view backingScaleFactor]);
+		OS_OSX::singleton->input->set_mouse_position(Point2(mouse_x, mouse_y));
 
-	if (OS_OSX::singleton->get_main_loop())
 		OS_OSX::singleton->get_main_loop()->notification(MainLoop::NOTIFICATION_WM_FOCUS_IN);
+	}
 }
 
 - (void)windowDidResignKey:(NSNotification *)notification {
@@ -364,6 +365,8 @@ static Vector2 get_mouse_pos(NSPoint locationInWindow, CGFloat backingScaleFacto
 	bool imeMode;
 }
 - (void)cancelComposition;
+- (BOOL)wantsUpdateLayer;
+- (void)updateLayer;
 @end
 
 @implementation GodotContentView
@@ -372,6 +375,14 @@ static Vector2 get_mouse_pos(NSPoint locationInWindow, CGFloat backingScaleFacto
 	if (self == [GodotContentView class]) {
 		// nothing left to do here at the moment..
 	}
+}
+
+- (BOOL)wantsUpdateLayer {
+	return YES;
+}
+
+- (void)updateLayer {
+	[OS_OSX::singleton->context update];
 }
 
 - (id)init {
@@ -933,7 +944,7 @@ static int remapKey(unsigned int key) {
 
 	CFDataRef layoutData = (CFDataRef)TISGetInputSourceProperty(currentKeyboard, kTISPropertyUnicodeKeyLayoutData);
 	if (!layoutData)
-		return 0;
+		return translateKey(key);
 
 	const UCKeyboardLayout *keyboardLayout = (const UCKeyboardLayout *)CFDataGetBytePtr(layoutData);
 
@@ -1384,7 +1395,6 @@ Error OS_OSX::initialize(const VideoMode &p_desired, int p_video_driver, int p_a
 
 	visual_server = memnew(VisualServerRaster);
 	if (get_render_thread_mode() != RENDER_THREAD_UNSAFE) {
-
 		visual_server = memnew(VisualServerWrapMT(visual_server, get_render_thread_mode() == RENDER_SEPARATE_THREAD));
 	}
 
@@ -1408,7 +1418,9 @@ Error OS_OSX::initialize(const VideoMode &p_desired, int p_video_driver, int p_a
 
 void OS_OSX::finalize() {
 
+#ifdef COREMIDI_ENABLED
 	midi_driver.close();
+#endif
 
 	CFNotificationCenterRemoveObserver(CFNotificationCenterGetDistributedCenter(), NULL, kTISNotifySelectedKeyboardInputSourceChanged, NULL);
 	CGDisplayRemoveReconfigurationCallback(displays_arrangement_changed, NULL);
@@ -2725,7 +2737,9 @@ OS_OSX::OS_OSX() {
 		[NSApp sendEvent:event];
 	}
 
+#ifdef COREAUDIO_ENABLED
 	AudioDriverManager::add_driver(&audio_driver);
+#endif
 }
 
 bool OS_OSX::_check_internal_feature_support(const String &p_feature) {

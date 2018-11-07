@@ -170,6 +170,7 @@ void ProjectExportDialog::_edit_preset(int p_index) {
 	if (p_index < 0 || p_index >= presets->get_item_count()) {
 		name->set_text("");
 		name->set_editable(false);
+		export_path->set_editable(false);
 		runnable->set_disabled(true);
 		parameters->edit(NULL);
 		presets->unselect_all();
@@ -191,9 +192,11 @@ void ProjectExportDialog::_edit_preset(int p_index) {
 	sections->show();
 
 	name->set_editable(true);
+	export_path->set_editable(true);
 	duplicate_preset->set_disabled(false);
 	delete_preset->set_disabled(false);
 	name->set_text(current->get_name());
+	export_path->set_text(current->get_export_path());
 	runnable->set_disabled(false);
 	runnable->set_pressed(current->is_runnable());
 	parameters->edit(current.ptr());
@@ -429,6 +432,18 @@ void ProjectExportDialog::_name_changed(const String &p_string) {
 	ERR_FAIL_COND(current.is_null());
 
 	current->set_name(p_string);
+	_update_presets();
+}
+
+void ProjectExportDialog::_export_path_changed(const String &p_string) {
+
+	if (updating)
+		return;
+
+	Ref<EditorExportPreset> current = EditorExport::get_singleton()->get_export_preset(presets->get_current());
+	ERR_FAIL_COND(current.is_null());
+
+	current->set_export_path(p_string);
 	_update_presets();
 }
 
@@ -804,13 +819,16 @@ void ProjectExportDialog::_export_project() {
 	export_project->set_access(FileDialog::ACCESS_FILESYSTEM);
 	export_project->clear_filters();
 
+	List<String> extension_list = platform->get_binary_extensions(current);
+	for (int i = 0; i < extension_list.size(); i++) {
+		export_project->add_filter("*." + extension_list[i] + " ; " + platform->get_name() + " Export");
+	}
+
 	if (current->get_export_path() != "") {
 		export_project->set_current_path(current->get_export_path());
 	} else {
-		String extension = platform->get_binary_extension(current);
-		if (extension != String()) {
-			export_project->add_filter("*." + extension + " ; " + platform->get_name() + " Export");
-			export_project->set_current_file(default_filename + "." + extension);
+		if (extension_list.size() >= 1) {
+			export_project->set_current_file(default_filename + "." + extension_list[0]);
 		} else {
 			export_project->set_current_file(default_filename);
 		}
@@ -926,6 +944,10 @@ ProjectExportDialog::ProjectExportDialog() {
 	runnable->connect("pressed", this, "_runnable_pressed");
 	settings_vb->add_child(runnable);
 
+	export_path = memnew(LineEdit);
+	settings_vb->add_margin_child(TTR("Export Path:"), export_path);
+	export_path->connect("text_changed", this, "_export_path_changed");
+
 	sections = memnew(TabContainer);
 	sections->set_tab_align(TabContainer::ALIGN_LEFT);
 	settings_vb->add_child(sections);
@@ -1016,6 +1038,7 @@ ProjectExportDialog::ProjectExportDialog() {
 
 	//disable by default
 	name->set_editable(false);
+	export_path->set_editable(false);
 	runnable->set_disabled(true);
 	duplicate_preset->set_disabled(true);
 	delete_preset->set_disabled(true);
