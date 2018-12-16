@@ -351,18 +351,18 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 
 	theme->set_color("mono_color", "Editor", mono_color);
 
-	Color success_color = accent_color.linear_interpolate(Color(0.2, 1, 0.2), 0.6) * 1.2;
-	Color warning_color = accent_color.linear_interpolate(Color(1, 1, 0), 0.7) * 1.0;
-	Color error_color = accent_color.linear_interpolate(Color(1, 0, 0), 0.8) * 1.7;
+	Color success_color = Color(0.45, 0.95, 0.5);
+	Color warning_color = Color(1, 0.87, 0.4);
+	Color error_color = Color(1, 0.47, 0.42);
 	Color property_color = font_color.linear_interpolate(Color(0.5, 0.5, 0.5), 0.5);
 
 	if (!dark_theme) {
-		// yellow on white themes is a P.I.T.A.
-		warning_color = accent_color.linear_interpolate(Color(0.9, 0.7, 0), 0.9);
-		warning_color = warning_color.linear_interpolate(mono_color, 0.2);
-		success_color = success_color.linear_interpolate(mono_color, 0.2);
-		error_color = error_color.linear_interpolate(mono_color, 0.2);
+		// Darken some colors to be readable on a light background
+		success_color = success_color.linear_interpolate(mono_color, 0.35);
+		warning_color = warning_color.linear_interpolate(mono_color, 0.35);
+		error_color = error_color.linear_interpolate(mono_color, 0.25);
 	}
+
 	theme->set_color("success_color", "Editor", success_color);
 	theme->set_color("warning_color", "Editor", warning_color);
 	theme->set_color("error_color", "Editor", error_color);
@@ -1080,7 +1080,6 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 	const Color safe_line_number_color = dim_color * Color(1, 1.2, 1, 1.5);
 	const Color caret_color = mono_color;
 	const Color caret_background_color = mono_color.inverted();
-	const Color indent_guide_color = alpha2;
 	const Color text_selected_color = dark_color_3;
 	const Color selection_color = alpha2;
 	const Color brace_mismatch_color = error_color;
@@ -1116,7 +1115,6 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 		setting->set_initial_value("text_editor/highlighting/safe_line_number_color", safe_line_number_color, true);
 		setting->set_initial_value("text_editor/highlighting/caret_color", caret_color, true);
 		setting->set_initial_value("text_editor/highlighting/caret_background_color", caret_background_color, true);
-		setting->set_initial_value("text_editor/highlighting/indent_guide_color", indent_guide_color, true);
 		setting->set_initial_value("text_editor/highlighting/text_selected_color", text_selected_color, true);
 		setting->set_initial_value("text_editor/highlighting/selection_color", selection_color, true);
 		setting->set_initial_value("text_editor/highlighting/brace_mismatch_color", brace_mismatch_color, true);
